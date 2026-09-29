@@ -14,8 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Database Connection & WAL Mode for Concurrency Safety
-const DB_PATH = path.join(__dirname, 'betting.db');
-const db = new sqlite3.Database(DB_PATH, (err) => {
+const db = new sqlite3.Database('./betting.db', (err) => {
     if (err) {
         console.error('Database opening error: ', err.message);
     } else {
@@ -28,19 +27,12 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 // Mobile / Safari / Server Timezone Safe Date Parser
 function parseMatchTime(timeStr) {
     if (!timeStr) return 0;
-    const raw = String(timeStr).trim();
-
-    // Admin enters datetime-local in Myanmar time. Treat timezone-less values
-    // as Asia/Yangon (+06:30), regardless of Railway's server timezone (UTC).
-    const naive = raw.replace(' ', 'T');
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(naive)) {
-        const iso = naive.length === 16 ? `${naive}:00` : naive;
-        const utcMs = Date.parse(`${iso}+06:30`);
-        return Number.isNaN(utcMs) ? 0 : utcMs;
+    let rawTime = String(timeStr).trim();
+    if (rawTime.includes(' ') && !rawTime.includes('T')) {
+        rawTime = rawTime.replace(' ', 'T');
     }
-
-    const t = new Date(raw).getTime();
-    return Number.isNaN(t) ? 0 : t;
+    const t = new Date(rawTime).getTime();
+    return isNaN(t) ? 0 : t;
 }
 
 // Database Initialization
@@ -82,6 +74,23 @@ db.serialize(() => {
         parlay_group_id TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // Schema migration: older Railway databases may have been created before
+    // parlay_group_id was introduced. CREATE TABLE IF NOT EXISTS does not add
+    // missing columns, so explicitly migrate the existing table.
+    db.all(`PRAGMA table_info(bets)`, [], (err, columns) => {
+        if (err) {
+            console.error('bets schema check failed:', err.message);
+            return;
+        }
+        const hasParlayGroupId = columns.some(c => c.name === 'parlay_group_id');
+        if (!hasParlayGroupId) {
+            db.run(`ALTER TABLE bets ADD COLUMN parlay_group_id TEXT DEFAULT NULL`, (alterErr) => {
+                if (alterErr) console.error('bets migration failed:', alterErr.message);
+                else console.log('Database migration: added bets.parlay_group_id');
+            });
+        }
+    });
 
     // 4. Transactions Table
     db.run(`CREATE TABLE IF NOT EXISTS transactions (
@@ -324,6 +333,120 @@ app.post(['/api/users/add-balance', '/api/admin/update-balance'], (req, res) => 
     });
 });
 
+// ================= USER PROFILE / ADMIN USER EDIT APIs ================= //
+app.post('/api/user/change-password', (req, res) => {
+    const { username, current_password, new_password } = req.body;
+    if (!username || !current_password || !new_password) {
+        return res.status(400).json({ success: false, message: 'လက်ရှိ Password နှင့် Password အသစ် ဖြည့်ပါ။' });
+    }
+    if (String(new_password).length < 6) {
+        return res.status(400).json({ success: false, message: 'Password အသစ်သည် အနည်းဆုံး 6 လုံးရှိရပါမည်။' });
+    }
+
+    db.get(`SELECT id, password, role FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!user || user.role !== 'user') {
+            return res.status(404).json({ success: false, message: 'User account မတွေ့ပါ။' });
+        }
+
+        bcrypt.compare(current_password, user.password, (compareErr, ok) => {
+            if (compareErr) return res.status(500).json({ success: false, error: compareErr.message });
+            if (!ok) return res.status(400).json({ success: false, message: 'လက်ရှိ Password မှားနေပါသည်။' });
+
+            const hashed = bcrypt.hashSync(new_password, 10);
+            db.run(`UPDATE users SET password = ? WHERE id = ?`, [hashed, user.id], function(updateErr) {
+                if (updateErr) return res.status(500).json({ success: false, error: updateErr.message });
+                res.json({ success: true, message: 'Password ပြောင်းပြီးပါပြီ။' });
+            });
+        });
+    });
+});
+
+// Admin: edit username / balance / optional password. Username changes are
+// propagated to historical bet and transaction records so the account history
+// remains attached to the edited user.
+app.put(['/api/users/:id', '/api/admin/users/:id'], (req, res) => {
+    const userId = Number(req.params.id);
+    const { username, password, balance } = req.body;
+    if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({ success: false, message: 'User ID မမှန်ကန်ပါ။' });
+    }
+    const newUsername = String(username || '').trim();
+    if (!newUsername) return res.status(400).json({ success: false, message: 'Username ဖြည့်ပါ။' });
+
+    db.get(`SELECT id, username, role FROM users WHERE id = ?`, [userId], (err, user) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!user || user.role !== 'user') return res.status(404).json({ success: false, message: 'User မတွေ့ပါ။' });
+
+        const nextBalance = balance === undefined || balance === '' ? null : Number(balance);
+        if (nextBalance !== null && (!Number.isFinite(nextBalance) || nextBalance < 0)) {
+            return res.status(400).json({ success: false, message: 'Balance မမှန်ကန်ပါ။' });
+        }
+
+        db.get(`SELECT id FROM users WHERE username = ? AND id <> ?`, [newUsername, userId], (dupErr, duplicate) => {
+            if (dupErr) return res.status(500).json({ success: false, error: dupErr.message });
+            if (duplicate) return res.status(400).json({ success: false, message: 'ဒီ Username ဖြင့် အကောင့်ရှိပြီးသားပါ။' });
+
+            const oldUsername = user.username;
+            const passwordClause = password && String(password).trim()
+                ? `, password = ?`
+                : '';
+            const params = [newUsername];
+            if (nextBalance !== null) {
+                params.push(nextBalance);
+            }
+            if (passwordClause) params.push(bcrypt.hashSync(String(password).trim(), 10));
+            params.push(userId);
+
+            let sql = `UPDATE users SET username = ?`;
+            if (nextBalance !== null) sql += `, balance = ?`;
+            sql += passwordClause + ` WHERE id = ?`;
+
+            db.run(sql, params, function(updateErr) {
+                if (updateErr) return res.status(500).json({ success: false, error: updateErr.message });
+
+                if (oldUsername !== newUsername) {
+                    db.run(`UPDATE bets SET username = ? WHERE username = ?`, [newUsername, oldUsername]);
+                    db.run(`UPDATE transactions SET username = ? WHERE username = ?`, [newUsername, oldUsername]);
+                }
+                res.json({ success: true, message: 'User information updated successfully' });
+            });
+        });
+    });
+});
+
+// Admin: permanently remove a bettor account and its betting/transaction data.
+// The admin account itself can never be deleted through this endpoint.
+app.delete(['/api/users/:id', '/api/admin/users/:id'], (req, res) => {
+    const userId = Number(req.params.id);
+    if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({ success: false, message: 'User ID မမှန်ကန်ပါ။' });
+    }
+
+    db.get(`SELECT id, username, role FROM users WHERE id = ?`, [userId], (err, user) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!user) return res.status(404).json({ success: false, message: 'User မတွေ့ပါ။' });
+        if (user.role === 'admin') return res.status(403).json({ success: false, message: 'Admin account ကို ဖျက်၍မရပါ။' });
+
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
+            db.run(`DELETE FROM bets WHERE username = ?`, [user.username], (betErr) => {
+                if (betErr) { db.run('ROLLBACK'); return res.status(500).json({ success: false, error: betErr.message }); }
+                db.run(`DELETE FROM transactions WHERE username = ?`, [user.username], (txErr) => {
+                    if (txErr) { db.run('ROLLBACK'); return res.status(500).json({ success: false, error: txErr.message }); }
+                    db.run(`DELETE FROM users WHERE id = ?`, [userId], (deleteErr) => {
+                        if (deleteErr) { db.run('ROLLBACK'); return res.status(500).json({ success: false, error: deleteErr.message }); }
+                        db.run('COMMIT', (commitErr) => {
+                            if (commitErr) return res.status(500).json({ success: false, error: commitErr.message });
+                            res.json({ success: true, message: `User ${user.username} deleted successfully` });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+
 // ================= MATCH MANAGEMENT APIs ================= //
 app.get(['/api/matches', '/api/admin/matches'], (req, res) => {
     checkAndCloseExpiredMatches(() => {
@@ -497,13 +620,9 @@ app.delete('/api/bets/:id', (req, res) => {
 });
 
 app.post('/api/user/place-bet', (req, res) => {
-    const { username, bets, is_parlay, total_amount } = req.body || {};
-
-    if (!username || typeof username !== 'string') {
-        return res.status(400).json({ success: false, message: 'Login session မမှန်ကန်ပါ။ Login ပြန်ဝင်ပါ။' });
-    }
-
-    let incomingBets = Array.isArray(bets) ? bets : null;
+    const { username, bets, is_parlay, total_amount } = req.body;
+    
+    let incomingBets = bets;
     if (!incomingBets && req.body.match_id) {
         incomingBets = [{
             match_id: req.body.match_id,
@@ -519,166 +638,52 @@ app.post('/api/user/place-bet', (req, res) => {
         return res.status(400).json({ success: false, message: 'လောင်းမည့်ပွဲစဉ်များ မရှိပါ။' });
     }
 
-    // Normalize and validate every bet before opening the transaction.
-    incomingBets = incomingBets.map(b => ({
-        match_id: b.match_id != null ? String(b.match_id) : '',
-        match_name: b.match_name != null ? String(b.match_name) : '',
-        bet_type: b.bet_type != null ? String(b.bet_type) : '',
-        choice: b.choice != null ? String(b.choice) : '',
-        odds_rate: b.odds_rate != null ? String(b.odds_rate) : '',
-        amount: Number(b.amount)
-    }));
-
-    if (incomingBets.some(b => !b.match_id || !b.bet_type || !b.choice || !Number.isFinite(b.amount) || b.amount < 100)) {
-        return res.status(400).json({ success: false, message: 'လောင်းကြေးအချက်အလက် မမှန်ကန်ပါ။ အနည်းဆုံး 100 Kyats ထည့်ပါ။' });
-    }
-
-    const totalDeduction = is_parlay
-        ? Number(total_amount)
-        : incomingBets.reduce((sum, b) => sum + b.amount, 0);
-
-    if (!Number.isFinite(totalDeduction) || totalDeduction <= 0) {
+    const totalDeduction = is_parlay ? Number(total_amount) : incomingBets.reduce((sum, b) => sum + Number(b.amount), 0);
+    if (isNaN(totalDeduction) || totalDeduction <= 0) {
         return res.status(400).json({ success: false, message: 'ငွေပမာဏ မမှန်ကန်ပါ။' });
     }
 
-    // Validate user balance from the database, not stale localStorage data.
+    // Safeguard check to prevent 500 server crash if user is missing from railway database
     db.get(`SELECT balance FROM users WHERE username = ?`, [username], (err, user) => {
-        if (err) {
-            console.error('Place bet - user lookup error:', err.message);
-            return res.status(500).json({ success: false, message: 'Database အမှားအယွင်း ဖြစ်နေပါသည်။', error: err.message });
-        }
-        if (!user) {
-            return res.status(400).json({ success: false, message: 'အသုံးပြုသူ အကောင့်ကို ရှာမတွေ့ပါ။ Login ပြန်ဝင်ပါ။' });
-        }
-        if (Number(user.balance) < totalDeduction) {
-            return res.status(400).json({ success: false, message: 'လက်ကျန်ငွေ မလုံလောက်ပါ။' });
-        }
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!user) return res.status(400).json({ success: false, message: 'အသုံးပြုသူ အကောင့်ကို ရှာမတွေ့ပါ။ ကျေးဇူးပြု၍ Login ပြန်ဝင်ပါ။' });
+        if (user.balance < totalDeduction) return res.status(400).json({ success: false, message: 'လက်ကျန်ငွေ မလုံလောက်ပါ။' });
 
-        // Validate all selected matches and make sure they are still open.
-        const uniqueIds = [...new Set(incomingBets.map(b => b.match_id))];
-        const placeholders = uniqueIds.map(() => '?').join(',');
-        db.all(
-            `SELECT id, custom_match_id, match_name, status, match_time, body_odds, goal_odds
-             FROM matches
-             WHERE id IN (${placeholders}) OR custom_match_id IN (${placeholders})`,
-            [...uniqueIds, ...uniqueIds],
-            (matchErr, rows) => {
-                if (matchErr) {
-                    console.error('Place bet - match lookup error:', matchErr.message);
-                    return res.status(500).json({ success: false, message: 'ပွဲစဉ် Database အမှားအယွင်း ဖြစ်နေပါသည်။', error: matchErr.message });
+        db.serialize(() => {
+            db.run(`BEGIN TRANSACTION`);
+
+            db.run(`UPDATE users SET balance = balance - ? WHERE username = ?`, [totalDeduction, username], (err) => {
+                if (err) {
+                    db.run(`ROLLBACK`);
+                    return res.status(500).json({ success: false, error: err.message });
                 }
 
-                const matchMap = new Map();
-                (rows || []).forEach(m => {
-                    matchMap.set(String(m.id), m);
-                    matchMap.set(String(m.custom_match_id), m);
-                });
+                const parlayGroupId = is_parlay ? 'PARLAY-' + Date.now() : null;
+                let completed = 0;
+                let hasError = false;
 
-                for (const bet of incomingBets) {
-                    const match = matchMap.get(String(bet.match_id));
-                    if (!match) {
-                        return res.status(400).json({ success: false, message: `ပွဲစဉ် ${bet.match_id} ကို ရှာမတွေ့ပါ။` });
-                    }
-                    const matchTimeMs = parseMatchTime(match.match_time);
-                    const expired = matchTimeMs > 0 && matchTimeMs <= Date.now();
-                    if (match.status !== 'Open' || expired) {
-                        return res.status(400).json({ success: false, message: `${match.match_name || 'ပွဲစဉ်'} မှာ လောင်းချိန်ပိတ်သွားပါပြီ။` });
-                    }
+                incomingBets.forEach(b => {
+                    db.run(`INSERT INTO bets (username, match_id, match_name, bet_type, choice, amount, odds_rate, status, parlay_group_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
+                        [username, b.match_id, b.match_name, b.bet_type, b.choice, is_parlay ? (completed === 0 ? totalDeduction : 0) : b.amount, b.odds_rate, parlayGroupId], (err) => {
+                        if (err) hasError = true;
+                        completed++;
 
-                    // Do not trust odds/team names sent by the browser.
-                    const teams = String(match.match_name || '').split(' vs ');
-                    const homeTeam = (teams[0] || '').trim();
-                    const awayTeam = (teams[1] || '').trim();
-                    const isBody = bet.bet_type.toLowerCase().includes('body') || bet.bet_type.includes('ဘော်ဒီ');
-                    const isGoal = bet.bet_type.toLowerCase().includes('goal') || bet.bet_type.includes('ဂိုးပေါင်း');
-                    if (!isBody && !isGoal) {
-                        return res.status(400).json({ success: false, message: 'Bet အမျိုးအစား မမှန်ကန်ပါ။' });
-                    }
-                    if (isBody && bet.choice !== homeTeam && bet.choice !== awayTeam) {
-                        return res.status(400).json({ success: false, message: 'ရွေးချယ်ထားသော Team မမှန်ကန်ပါ။' });
-                    }
-                    if (isGoal && !['Over', 'Under'].includes(bet.choice)) {
-                        return res.status(400).json({ success: false, message: 'Over / Under ရွေးချယ်မှု မမှန်ကန်ပါ။' });
-                    }
-                }
-
-                db.serialize(() => {
-                    db.run('BEGIN IMMEDIATE TRANSACTION', beginErr => {
-                        if (beginErr) {
-                            console.error('Place bet - BEGIN error:', beginErr.message);
-                            return res.status(500).json({ success: false, message: 'Bet transaction စတင်၍မရပါ။', error: beginErr.message });
-                        }
-
-                        const rollback = (message, error) => {
-                            db.run('ROLLBACK', () => {
-                                console.error('Place bet rollback:', error || message);
-                                if (!res.headersSent) res.status(500).json({ success: false, message, error });
-                            });
-                        };
-
-                        db.run(
-                            `UPDATE users SET balance = balance - ? WHERE username = ? AND balance >= ?`,
-                            [totalDeduction, username, totalDeduction],
-                            function(updateErr) {
-                                if (updateErr) return rollback('Balance update မအောင်မြင်ပါ။', updateErr.message);
-                                if (this.changes !== 1) return rollback('လက်ကျန်ငွေ မလုံလောက်ပါ။');
-
-                                const parlayGroupId = is_parlay ? 'PARLAY-' + Date.now() : null;
-                                let completed = 0;
-                                let hasError = false;
-                                let firstError = null;
-
-                                incomingBets.forEach((b, index) => {
-                                    // For parlay, only one bet row carries the deducted stake.
-                                    const storedAmount = is_parlay ? (index === 0 ? totalDeduction : 0) : b.amount;
-                                    const canonicalMatch = matchMap.get(String(b.match_id));
-                                    const canonicalOdds = (b.bet_type.toLowerCase().includes('body') || b.bet_type.includes('ဘော်ဒီ'))
-                                        ? canonicalMatch.body_odds
-                                        : canonicalMatch.goal_odds;
-                                    const canonicalMatchName = canonicalMatch.match_name;
-
-                                    db.run(
-                                        `INSERT INTO bets
-                                         (username, match_id, match_name, bet_type, choice, amount, odds_rate, status, parlay_group_id)
-                                         VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
-                                        [username, b.match_id, canonicalMatchName, b.bet_type, b.choice, storedAmount, canonicalOdds, parlayGroupId],
-                                        insertErr => {
-                                            if (insertErr && !firstError) firstError = insertErr.message;
-                                            if (insertErr) hasError = true;
-                                            completed++;
-
-                                            if (completed === incomingBets.length) {
-                                                if (hasError) {
-                                                    return rollback('Bet record သိမ်းဆည်း၍မရပါ။', firstError);
-                                                }
-
-                                                db.run(
-                                                    `INSERT INTO transactions
-                                                     (username, type, payment_method, amount, status, created_at)
-                                                     VALUES (?, ?, 'Wallet', ?, 'Completed', CURRENT_TIMESTAMP)`,
-                                                    [username, is_parlay ? 'Parlay Bet' : 'Bet Placed', totalDeduction],
-                                                    txErr => {
-                                                        if (txErr) return rollback('Transaction မှတ်တမ်း သိမ်းဆည်း၍မရပါ။', txErr.message);
-                                                        db.run('COMMIT', commitErr => {
-                                                            if (commitErr) return rollback('Bet transaction အတည်ပြု၍မရပါ။', commitErr.message);
-                                                            return res.json({
-                                                                success: true,
-                                                                message: 'လောင်းကြေး အောင်မြင်စွာ တင်ပြီးပါပြီ။',
-                                                                balance: Number(user.balance) - totalDeduction
-                                                            });
-                                                        });
-                                                    }
-                                                );
-                                            }
-                                        }
-                                    );
+                        if (completed === incomingBets.length) {
+                            if (hasError) {
+                                db.run(`ROLLBACK`);
+                                return res.status(500).json({ success: false, message: 'Failed to place bet.' });
+                            } else {
+                                db.run(`INSERT INTO transactions (username, type, payment_method, amount, status, created_at) VALUES (?, ?, 'Wallet', ?, 'Completed', CURRENT_TIMESTAMP)`, 
+                                    [username, is_parlay ? 'Parlay Bet' : 'Bet Placed', totalDeduction], () => {
+                                    db.run(`COMMIT`);
+                                    res.json({ success: true, message: 'Successfully placed bet(s)' });
                                 });
                             }
-                        );
+                        }
                     });
                 });
-            }
-        );
+            });
+        });
     });
 });
 

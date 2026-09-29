@@ -363,6 +363,35 @@
         </div>
     </div>
 
+    <!-- EDIT USER MODAL -->
+    <div id="editUserModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Edit User</h3>
+                <button onclick="closeEditUser()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <input type="hidden" id="edit-user-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Username</label>
+                    <input id="edit-username" type="text" class="w-full p-2.5 border rounded focus:outline-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Balance</label>
+                    <input id="edit-balance" type="number" min="0" step="1" class="w-full p-2.5 border rounded focus:outline-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">New Password <span class="font-normal text-gray-500">(မပြောင်းလိုပါက ဗလာထားပါ)</span></label>
+                    <input id="edit-password" type="password" minlength="6" class="w-full p-2.5 border rounded focus:outline-blue-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-5">
+                <button onclick="closeEditUser()" class="px-4 py-2 rounded border font-semibold">Cancel</button>
+                <button onclick="saveEditedUser()" class="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentActiveMatchId = null;
         let forwardMatchData = {};
@@ -522,7 +551,11 @@
                             <td class="border p-2.5 text-center font-semibold">${u.username}</td>
                             <td class="border p-2.5 text-center text-green-600 font-bold">${(u.balance || 0).toLocaleString()} MMK</td>
                             <td class="border p-2.5 text-center">
-                                <button onclick="addBalance('${u.username}')" class="bg-blue-600 text-white px-3 py-1 rounded text-xs cursor-pointer">Add Balance</button>
+                                <div class="flex flex-wrap justify-center gap-1.5">
+                                    <button onclick="addBalance(${u.id}, '${escapeJs(u.username)}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer">Add Balance</button>
+                                    <button onclick="openEditUser(${u.id}, '${escapeJs(u.username)}', ${Number(u.balance || 0)})" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer">Edit</button>
+                                    <button onclick="deleteUser(${u.id}, '${escapeJs(u.username)}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer">Delete</button>
+                                </div>
                             </td>
                         </tr>`;
                 });
@@ -530,14 +563,70 @@
             .catch(err => console.error('Error:', err));
         }
 
-        function addBalance(username) {
-            const amount = prompt(`ထည့်မည့်ပမာဏ (MMK):`);
-            if (!amount || isNaN(amount)) return;
+        function escapeJs(value) {
+            return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
+        }
+
+        function addBalance(userId, username) {
+            const amount = prompt(`ထည့်မည့်ပမာဏ (MMK) - ${username}:`);
+            if (!amount || isNaN(amount) || Number(amount) <= 0) return;
             fetch('/api/users/add-balance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, amount: parseFloat(amount) })
-            }).then(() => loadUsers());
+            }).then(async res => {
+                const result = await res.json().catch(() => ({}));
+                if (!res.ok || !result.success) alert(result.message || 'Balance update failed');
+                loadUsers();
+            });
+        }
+
+        function openEditUser(id, username, balance) {
+            document.getElementById('edit-user-id').value = id;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-balance').value = balance;
+            document.getElementById('edit-password').value = '';
+            const modal = document.getElementById('editUserModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEditUser() {
+            const modal = document.getElementById('editUserModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function saveEditedUser() {
+            const id = document.getElementById('edit-user-id').value;
+            const username = document.getElementById('edit-username').value.trim();
+            const balance = document.getElementById('edit-balance').value;
+            const password = document.getElementById('edit-password').value;
+            if (!username) return alert('Username ဖြည့်ပါ။');
+            if (password && password.length < 6) return alert('Password အသစ်သည် အနည်းဆုံး 6 လုံးရှိရပါမည်။');
+            if (balance === '' || Number(balance) < 0 || Number.isNaN(Number(balance))) return alert('Balance မမှန်ကန်ပါ။');
+
+            const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, balance: Number(balance), password })
+            });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok || !result.success) return alert(result.message || 'User update failed');
+            alert('User information updated successfully.');
+            closeEditUser();
+            loadUsers();
+        }
+
+        async function deleteUser(id, username) {
+            const ok = confirm(`"${username}" ကို အပြီးဖျက်မည်။\n\nUser account, betting records နှင့် transaction records များကိုပါ ဖျက်သွားမည်ဖြစ်ပါသည်။\n\nဆက်လုပ်မလား?`);
+            if (!ok) return;
+
+            const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok || !result.success) return alert(result.message || 'User delete failed');
+            alert('User deleted successfully.');
+            loadUsers();
         }
 
         // ================= MATCHES ================= //

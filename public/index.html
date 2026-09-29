@@ -135,6 +135,9 @@
                     <button class="btn btn-outline-warning btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#withdrawModal">
                         <i class="bi bi-arrow-up-circle me-1"></i>ငွေထုတ်
                     </button>
+                    <button class="btn btn-outline-info btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="bi bi-key-fill me-1"></i>Password
+                    </button>
                 </div>
                 <button id="btnLoginModal" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
                     <i class="bi bi-box-arrow-in-right me-1"></i> Login
@@ -301,6 +304,35 @@
         </div>
     </div>
 
+    <!-- CHANGE PASSWORD MODAL -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-key-fill me-2"></i>Change Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">လက်ရှိ Password</label>
+                            <input type="password" class="form-control" id="currentPassword" minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password အသစ်</label>
+                            <input type="password" class="form-control" id="newUserPassword" minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password အသစ် ပြန်ထည့်ပါ</label>
+                            <input type="password" class="form-control" id="confirmUserPassword" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-info text-white w-100 fw-bold">Password ပြောင်းမည်</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- PLACE BET MODAL -->
     <div class="modal fade" id="placeBetModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -391,6 +423,7 @@
 
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('betForm').addEventListener('submit', handlePlaceBet);
+            document.getElementById('changePasswordForm').addEventListener('submit', handleChangePassword);
             document.getElementById('depositForm').addEventListener('submit', handleDepositSubmit);
             document.getElementById('withdrawForm').addEventListener('submit', handleWithdrawSubmit);
         });
@@ -661,13 +694,13 @@
                                         <div class="small fw-bold text-secondary mb-1">ဘော်ဒီ (Body Odds: ${m.body_odds || '0='})</div>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" data-match-id="${encodeURIComponent(m.custom_match_id || m.id)}" data-match-name="${encodeURIComponent(m.match_name || '')}" data-bet-type="Body" data-choice="${encodeURIComponent(homeTeam)}" data-odds="${encodeURIComponent(m.body_odds || '')}" onclick="openBetFromButton(this)">
+                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Body', '${homeTeam}', '${m.body_odds}')">
                                                     <span class="odds-title text-danger">${homeTeam}</span>
                                                     <span class="odds-val text-primary">Body</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" data-match-id="${encodeURIComponent(m.custom_match_id || m.id)}" data-match-name="${encodeURIComponent(m.match_name || '')}" data-bet-type="Body" data-choice="${encodeURIComponent(awayTeam)}" data-odds="${encodeURIComponent(m.body_odds || '')}" onclick="openBetFromButton(this)">
+                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Body', '${awayTeam}', '${m.body_odds}')">
                                                     <span class="odds-title text-dark">${awayTeam}</span>
                                                     <span class="odds-val text-primary">Body</span>
                                                 </div>
@@ -680,13 +713,13 @@
                                         <div class="small fw-bold text-secondary mb-1">ဂိုးပေါင်း (Goal Odds: ${m.goal_odds || '0='})</div>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" data-match-id="${encodeURIComponent(m.custom_match_id || m.id)}" data-match-name="${encodeURIComponent(m.match_name || '')}" data-bet-type="Goal" data-choice="Over" data-odds="${encodeURIComponent(m.goal_odds || '')}" onclick="openBetFromButton(this)">
+                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Goal', 'Over', '${m.goal_odds}')">
                                                     <span class="odds-title text-danger">Over (ဂိုးပေါ်)</span>
                                                     <span class="odds-val text-primary">Over</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" data-match-id="${encodeURIComponent(m.custom_match_id || m.id)}" data-match-name="${encodeURIComponent(m.match_name || '')}" data-bet-type="Goal" data-choice="Under" data-odds="${encodeURIComponent(m.goal_odds || '')}" onclick="openBetFromButton(this)">
+                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Goal', 'Under', '${m.goal_odds}')">
                                                     <span class="odds-title text-dark">Under (ဂိုးအောက်)</span>
                                                     <span class="odds-val text-primary">Under</span>
                                                 </div>
@@ -706,17 +739,6 @@
                     container.innerHTML = `<div class="text-center py-5 text-danger">ပွဲစဉ်များ ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
                 }
             }
-        }
-
-        function openBetFromButton(el) {
-            if (el.classList.contains('disabled')) return;
-            openBetModal(
-                decodeURIComponent(el.dataset.matchId || ''),
-                decodeURIComponent(el.dataset.matchName || ''),
-                el.dataset.betType || '',
-                decodeURIComponent(el.dataset.choice || ''),
-                decodeURIComponent(el.dataset.odds || '')
-            );
         }
 
         function openBetModal(matchId, matchName, betType, choice, oddsRate) {
@@ -751,27 +773,53 @@
             placeBetModalInstance.show();
         }
 
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newUserPassword').value;
+            const confirmPassword = document.getElementById('confirmUserPassword').value;
+
+            if (newPassword.length < 6) return alert('Password အသစ်သည် အနည်းဆုံး 6 လုံးရှိရပါမည်။');
+            if (newPassword !== confirmPassword) return alert('Password အသစ်နှစ်ခု မတူပါ။');
+
+            try {
+                const res = await fetch('/api/user/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (!res.ok || !result.success) {
+                    return alert(result.message || 'Password ပြောင်း၍မရပါ။');
+                }
+
+                alert('Password ပြောင်းပြီးပါပြီ။');
+                document.getElementById('changePasswordForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'))?.hide();
+            } catch (err) {
+                console.error('Change password error:', err);
+                alert('Server အမှားအယွင်း ရှိနေပါသည်။');
+            }
+        }
+
         async function handlePlaceBet(e) {
             e.preventDefault();
-            if (!currentUser) {
-                alert('ဦးစွာ Login ဝင်ပါ။');
+            const amount = Number(document.getElementById('betAmount').value);
+
+            if (!Number.isFinite(amount) || amount <= 0) {
+                alert('ထိုးငွေ ပမာဏ မှန်ကန်စွာ ထည့်ပါ။');
                 return;
             }
 
-            const amount = Number(document.getElementById('betAmount').value);
-            if (!Number.isFinite(amount) || amount < 100) {
-                alert('အနည်းဆုံး 100 Kyats ထည့်ပါ။');
-                return;
-            }
-            if (amount > Number(currentUser.balance || 0)) {
+            if (amount > currentUser.balance) {
                 alert('လက်ကျန်ငွေ မလုံလောက်ပါ။');
                 return;
-            }
-
-            const submitBtn = document.querySelector('#betForm button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerText = 'တင်နေပါသည်...';
             }
 
             const payload = {
@@ -790,29 +838,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const result = await res.json().catch(() => ({ success: false, message: 'Server response မမှန်ကန်ပါ။' }));
+                const result = await res.json();
 
                 if (result.success) {
                     alert('လောင်းကြေး အောင်မြင်စွာ တင်ပြီးပါပြီ။');
-                    if (result.balance !== undefined) currentUser.balance = Number(result.balance);
-                    else currentUser.balance -= amount;
+                    currentUser.balance -= amount;
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     updateUserUI();
                     placeBetModalInstance.hide();
                     loadBetHistory(true);
                     loadTransactionStatement(true);
                 } else {
-                    alert(result.message || result.error || 'လောင်းကြေး တင်၍မရပါ။');
-                    await refreshUserBalance();
+                    alert(result.message || 'လောင်းကြေး တင်၍မရပါ။');
                 }
             } catch (err) {
-                console.error('Place bet error:', err);
-                alert('Server ချိတ်ဆက်မှု အဆင်မပြေပါ။ Railway Logs ကို စစ်ဆေးပါ။');
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = 'အတည်ပြုမည်';
-                }
+                alert('Server အမှားအယွင်း ရှိနေပါသည်။');
             }
         }
 
