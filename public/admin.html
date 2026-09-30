@@ -194,6 +194,7 @@
                                     <th class="border p-2.5">Match Name</th>
                                     <th class="border p-2.5">Final Score</th>
                                     <th class="border p-2.5">Status</th>
+                                    <th class="border p-2.5">Time (YGN)</th>
                                     <th class="border p-2.5">Action</th>
                                 </tr>
                             </thead>
@@ -218,6 +219,7 @@
                                     <th class="border p-2.5">Amount</th>
                                     <th class="border p-2.5">Account / Phone / TxID</th>
                                     <th class="border p-2.5">Status</th>
+                                    <th class="border p-2.5">Time (YGN)</th>
                                     <th class="border p-2.5">Action</th>
                                 </tr>
                             </thead>
@@ -891,7 +893,7 @@
                 const list = result.data || result || [];
                 const tbody = document.getElementById('transaction-list');
                 tbody.innerHTML = '';
-                if(!list.length) return tbody.innerHTML = `<tr><td colspan="12" class="border p-4 text-center">No transactions</td></tr>`;
+                if(!list.length) return tbody.innerHTML = `<tr><td colspan="9" class="border p-4 text-center">No transactions</td></tr>`;
 
                 list.forEach((tx, i) => {
                     tbody.innerHTML += `
@@ -903,6 +905,7 @@
                             <td class="border p-2.5 text-center font-bold">${tx.amount.toLocaleString()} MMK</td>
                             <td class="border p-2.5 text-center text-xs">${tx.account_name || '-'} / ${tx.phone || '-'} / ${tx.transaction_id || '-'}</td>
                             <td class="border p-2.5 text-center"><span class="px-2 py-0.5 text-xs rounded font-bold bg-gray-100">${tx.status}</span></td>
+                            <td class="border p-2.5 text-center text-xs whitespace-nowrap">${formatMyanmarTime(tx.created_at)}</td>
                             <td class="border p-2.5 text-center">
                                 ${tx.status === 'Pending' ? `
                                     <button onclick="actionTx(${tx.id}, 'Approved', '${tx.username}', ${tx.amount}, '${tx.type}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs cursor-pointer mr-1">Approve</button>
@@ -912,7 +915,7 @@
                         </tr>`;
                 });
             })
-            .catch(err => console.error('Error:', err));
+            .catch(err => { console.error('Transactions load error:', err); const tbody = document.getElementById('transaction-list'); if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="border p-4 text-center text-red-600">Failed to load transactions</td></tr>`; });
         }
 
         function actionTx(transaction_id, status, username, amount, type) {

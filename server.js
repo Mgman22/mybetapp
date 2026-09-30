@@ -917,6 +917,21 @@ app.post('/api/user/withdraw', (req, res) => {
     });
 });
 
+// Admin: list all deposit/withdraw/payout transactions for the Transactions tab.
+// Keep the query server-side so the admin table does not depend on the bettor's
+// username or browser state.
+app.get('/api/admin/transactions', (req, res) => {
+    db.all(`SELECT id, username, type, payment_method, account_name, phone, amount, transaction_id, status, created_at
+            FROM transactions
+            ORDER BY id DESC`, [], (err, rows) => {
+        if (err) {
+            console.error('Admin transactions load failed:', err.message);
+            return res.status(500).json({ success: false, error: err.message, data: [] });
+        }
+        res.json({ success: true, data: rows || [] });
+    });
+});
+
 app.get('/api/user/transactions', (req, res) => {
     const { username } = req.query;
     let query = `SELECT * FROM transactions`;
@@ -935,28 +950,39 @@ app.get('/api/user/transactions', (req, res) => {
 
 // Admin Transaction Action API (Approve / Reject) with Transaction Safety
 app.post('/api/admin/transactions/action', (req, res) => {
-    const { transaction_id, status, username, amount, type } = req.body; 
-    const amt = Number(amount);
+    const { transaction_id, status } = req.body;
+    const normalizedStatus = status === 'Approved' ? 'Approved' : (status === 'Rejected' ? 'Rejected' : null);
+    if (!transaction_id || !normalizedStatus) {
+        return res.status(400).json({ success: false, message: 'Invalid transaction action' });
+    }
 
-    db.serialize(() => {
-        db.run(`BEGIN TRANSACTION`);
+    db.get(`SELECT * FROM transactions WHERE id = ?`, [transaction_id], (getErr, tx) => {
+        if (getErr || !tx) return res.status(404).json({ success: false, message: 'Transaction not found' });
+        if (tx.status !== 'Pending') {
+            return res.status(409).json({ success: false, message: `Transaction is already ${tx.status}` });
+        }
 
-        db.run(`UPDATE transactions SET status = ? WHERE id = ?`, [status, transaction_id], function(err) {
+        const amt = Number(tx.amount);
+        db.serialize(() => {
+            db.run(`BEGIN TRANSACTION`);
+
+            db.run(`UPDATE transactions SET status = ? WHERE id = ? AND status = 'Pending'`, [normalizedStatus, transaction_id], function(err) {
             if (err) {
                 db.run(`ROLLBACK`);
                 return res.status(500).json({ success: false, error: err.message });
             }
 
-            if (status === 'Approved' && type === 'Deposit') {
-                db.run(`UPDATE users SET balance = balance + ? WHERE username = ?`, [amt, username]);
+            if (normalizedStatus === 'Approved' && tx.type === 'Deposit') {
+                db.run(`UPDATE users SET balance = balance + ? WHERE username = ?`, [amt, tx.username]);
             }
-            
-            if (status === 'Rejected' && type === 'Withdraw') {
-                db.run(`UPDATE users SET balance = balance + ? WHERE username = ?`, [amt, username]);
+
+            if (normalizedStatus === 'Rejected' && tx.type === 'Withdraw') {
+                db.run(`UPDATE users SET balance = balance + ? WHERE username = ?`, [amt, tx.username]);
             }
 
             db.run(`COMMIT`);
-            res.json({ success: true, message: `ငွေစာရင်း တောင်းဆိုမှုမှာ ${status} ဖြစ်သွားပါပြီ။` });
+            res.json({ success: true, message: `ငွေစာရင်း တောင်းဆိုမှုမှာ ${normalizedStatus} ဖြစ်သွားပါပြီ။` });
+            });
         });
     });
 });
