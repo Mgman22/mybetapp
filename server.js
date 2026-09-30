@@ -5,6 +5,8 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 
 const app = express();
+process.env.TZ = 'Asia/Yangon';
+const YGN_TIMEZONE = 'Asia/Yangon';
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -960,6 +962,24 @@ app.post('/api/admin/transactions/action', (req, res) => {
 });
 
 // ================= RISK MANAGEMENT API ================= //
+app.get('/api/admin/risk-summary', (req, res) => {
+    const sql = `
+        SELECT m.id, m.custom_match_id, m.match_name, m.match_time, m.status,
+               COUNT(DISTINCT b.username) AS bettor_count,
+               COALESCE(SUM(b.amount),0) AS total_pool,
+               COALESCE(SUM(CASE WHEN b.choice = TRIM(substr(m.match_name,1,instr(m.match_name,' vs ')-1)) THEN b.amount ELSE 0 END),0) AS home_amount,
+               COALESCE(SUM(CASE WHEN b.choice = TRIM(substr(m.match_name,instr(m.match_name,' vs ')+4)) THEN b.amount ELSE 0 END),0) AS away_amount,
+               COALESCE(SUM(CASE WHEN lower(b.choice) LIKE 'over%' THEN b.amount ELSE 0 END),0) AS over_amount,
+               COALESCE(SUM(CASE WHEN lower(b.choice) LIKE 'under%' THEN b.amount ELSE 0 END),0) AS under_amount
+        FROM matches m LEFT JOIN bets b ON CAST(b.match_id AS TEXT)=CAST(COALESCE(m.custom_match_id,m.id) AS TEXT) OR CAST(b.match_id AS TEXT)=CAST(m.id AS TEXT)
+        GROUP BY m.id ORDER BY CAST(COALESCE(m.custom_match_id,m.id) AS INTEGER), m.match_time`;
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ success:false, error:err.message });
+        res.json({ success:true, data: rows.map(r => ({...r, max_side_risk: Math.max(Number(r.home_amount)||0,Number(r.away_amount)||0,Number(r.over_amount)||0,Number(r.under_amount)||0)})) });
+    });
+});
+
+
 app.post('/api/admin/forward-risk', (req, res) => {
     const { match_id, choice, amount } = req.body;
     if (!match_id || !choice || !amount) {

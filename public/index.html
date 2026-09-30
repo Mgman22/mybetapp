@@ -8,6 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
+        body.auth-required > *:not(#loginGate) { display: none !important; }
+        #loginGate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; padding: 20px; }
+        #loginGate .gate-card { width: 100%; max-width: 420px; }
+
         body {
             background-color: #f4f6f9;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -131,7 +135,22 @@
         }
     </style>
 </head>
-<body>
+<body class="auth-required">
+    <div id="loginGate">
+        <div class="gate-card card shadow-lg border-0">
+            <div class="card-body p-4 p-md-5 text-center">
+                <div class="display-6 text-warning mb-2"><i class="bi bi-shield-lock-fill"></i></div>
+                <h3 class="fw-bold mb-1">Bettor Login</h3>
+                <p class="text-muted mb-4">ပွဲစဉ်များကို ကြည့်ရှုရန် အရင် Login ဝင်ပါ။</p>
+                <form id="gateLoginForm">
+                    <input class="form-control form-control-lg mb-3" id="gateUsername" placeholder="Username" autocomplete="username" required>
+                    <input class="form-control form-control-lg mb-3" id="gatePassword" type="password" placeholder="Password" autocomplete="current-password" required>
+                    <button class="btn btn-warning btn-lg w-100 fw-bold" type="submit"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
+                    <div id="gateError" class="text-danger small mt-3"></div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Top Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
@@ -437,10 +456,13 @@
             withdrawModalInstance = new bootstrap.Modal(document.getElementById('withdrawModal'));
 
             updateUserUI();
-            loadMatches();
-            startAutoRefresh();
-
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('gateLoginForm').addEventListener('submit', handleGateLogin);
+            if (currentUser) {
+                enterAuthenticatedView();
+            } else {
+                showLoginGate();
+            }
             document.getElementById('betForm').addEventListener('submit', handlePlaceBet);
             document.getElementById('changePasswordForm').addEventListener('submit', handleChangePassword);
             document.getElementById('depositForm').addEventListener('submit', handleDepositSubmit);
@@ -634,18 +656,49 @@
             }
         }
 
+        function showLoginGate() {
+            document.body.classList.add('auth-required');
+            document.getElementById('loginGate').style.display = 'flex';
+        }
+
+        function enterAuthenticatedView() {
+            document.body.classList.remove('auth-required');
+            document.getElementById('loginGate').style.display = 'none';
+            updateUserUI();
+            loadMatches();
+            startAutoRefresh();
+        }
+
+        async function performLogin(username, password) {
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            return await res.json();
+        }
+
+        async function handleGateLogin(e) {
+            e.preventDefault();
+            const err = document.getElementById('gateError');
+            err.textContent = '';
+            try {
+                const data = await performLogin(document.getElementById('gateUsername').value.trim(), document.getElementById('gatePassword').value);
+                if (!data.success) { err.textContent = data.message || 'Login မှားယွင်းနေပါသည်။'; return; }
+                currentUser = data.user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                enterAuthenticatedView();
+                loadBetHistory();
+                loadTransactionStatement();
+            } catch (e) { err.textContent = 'Server ချိတ်ဆက်မှု အဆင်မပြေပါ။'; }
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
 
             try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
+                const data = await performLogin(username, password);
                 if (data.success) {
                     currentUser = data.user;
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -665,6 +718,7 @@
             currentUser = null;
             localStorage.removeItem('currentUser');
             updateUserUI();
+            showLoginGate();
             document.getElementById('betHistoryContainer').innerHTML = `
                 <div class="text-center py-5"><p class="text-muted">လောင်းထားသော စာရင်းကြည့်ရန် Login ဝင်ပါ။</p></div>`;
             document.getElementById('statementContainer').innerHTML = `
