@@ -6,6 +6,28 @@
     <title>Admin Dashboard - Betting Platform</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body { overflow-x: hidden; }
+        @media (max-width: 767.98px) {
+            #sidebar { width: min(82vw, 280px); position: fixed; inset: 0 auto 0 0; z-index: 50; overflow-y: auto; }
+            main { padding: .75rem !important; }
+            header { padding: .75rem !important; }
+            header h2 { font-size: 1rem; }
+            #page-users > div, #page-matches > div, #page-results > div, #page-transactions > div, #page-bets > div, #page-risk > div { padding: .75rem !important; }
+            table { min-width: 0 !important; width: 100%; }
+            .overflow-x-auto { -webkit-overflow-scrolling: touch; overflow-x: auto; }
+            #page-matches table th:nth-child(1), #page-matches table td:nth-child(1),
+            #page-matches table th:nth-child(2), #page-matches table td:nth-child(2),
+            #page-matches table th:nth-child(5), #page-matches table td:nth-child(5) { display: none; }
+            #page-matches table th, #page-matches table td,
+            #page-results table th, #page-results table td,
+            #page-users table th, #page-users table td { padding: .45rem .35rem !important; font-size: .72rem; }
+            #page-matches table td:last-child { min-width: 145px; }
+            #editUserModal > div, #result-modal > div, #edit-odds-modal > div, #forward-modal > div { max-height: 92vh; overflow-y: auto; }
+            #page-users .grid, #page-matches .grid { gap: .65rem; }
+            button { min-height: 38px; }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex">
 
@@ -398,6 +420,31 @@
         let allMatches = [];
         let riskMatchesData = [];
 
+        const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
+        const BET_LOCK_MINUTES = 15;
+
+        function parseMyanmarTime(timeStr) {
+            if (!timeStr) return 0;
+            let raw = String(timeStr).trim().replace(' ', 'T');
+            if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(raw)) {
+                const t = new Date(raw).getTime();
+                return Number.isNaN(t) ? 0 : t;
+            }
+            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (!m) return new Date(raw).getTime() || 0;
+            const [, y, mo, d, h, mi, sec='00'] = m;
+            return Date.UTC(+y, +mo-1, +d, +h, +mi, +sec) - MYANMAR_OFFSET_MS;
+        }
+
+        function formatMyanmarTime(timeStr) {
+            const ms = parseMyanmarTime(timeStr);
+            if (!ms) return timeStr || '-';
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Yangon', month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            }).format(new Date(ms));
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('hidden');
@@ -444,6 +491,11 @@
             else if(page === 'transactions') loadTransactions();
             else if(page === 'bets') loadBets();
             else if(page === 'risk') loadRiskData();
+
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.add('hidden');
+            }
         }
 
         function adminLogout() { window.location.href = '/index.html'; }
@@ -694,8 +746,11 @@
                         <td class="border p-2.5 text-center font-bold">${m.custom_match_id || m.id}</td>
                         <td class="border p-2.5 text-center">${m.match_name}</td>
                         <td class="border p-2.5 text-center text-xs">B: ${m.body_odds} | G: ${m.goal_odds}</td>
-                        <td class="border p-2.5 text-center text-xs">${m.match_time}</td>
-                        <td class="border p-2.5 text-center"><span class="px-2 py-1 text-xs rounded ${m.status === 'Open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${m.status}</span></td>
+                        <td class="border p-2.5 text-center text-xs whitespace-nowrap">${formatMyanmarTime(m.match_time)}</td>
+                        <td class="border p-2.5 text-center">
+                            <div><span class="px-2 py-1 text-xs rounded ${m.status === 'Open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${m.status}</span></div>
+                            <div class="text-[11px] mt-1 ${m.betting_open === false && m.status === 'Open' ? 'text-red-600 font-bold' : 'text-gray-500'}">${m.status === 'Open' ? (m.betting_open === false ? 'Bet Closed (15m)' : 'Bet Open') : '-'}</div>
+                        </td>
                         <td class="border p-2.5 text-center space-x-1">
                             <button onclick="openEditOddsModal(${m.id})" class="bg-sky-600 text-white px-2 py-1 rounded text-xs cursor-pointer">Edit Odds</button>
                             <button onclick="toggleStatus(${m.id}, '${m.status === 'Open' ? 'Closed' : 'Open'})" class="bg-amber-500 text-white px-2 py-1 rounded text-xs cursor-pointer">Toggle</button>

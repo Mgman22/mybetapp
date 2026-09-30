@@ -110,6 +110,25 @@
             border-color: #0d6efd;
             background-color: #e7f1ff;
         }
+
+        @media (max-width: 767.98px) {
+            body { overflow-x: hidden; }
+            .navbar { padding-top: .55rem; padding-bottom: .55rem; }
+            .navbar > .container { flex-wrap: wrap; gap: .45rem; }
+            .navbar-brand { font-size: .82rem; max-width: 56vw; line-height: 1.15; }
+            #userInfo { margin: 0 !important; width: 100%; justify-content: flex-end; flex-wrap: wrap; gap: .25rem; }
+            #userInfo > span { font-size: .78rem; }
+            #userInfo .btn { font-size: .72rem; padding: .3rem .45rem; }
+            #pills-tab { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start !important; scrollbar-width: thin; }
+            #pills-tab .nav-item { flex: 0 0 auto; }
+            #pills-tab .nav-link { white-space: nowrap; font-size: .78rem; padding: .5rem .65rem; }
+            .card-match { border-radius: 10px; }
+            .odds-btn { min-height: 58px; padding: 9px 6px; }
+            .modal-dialog { margin: .5rem; }
+            .modal-body { padding: .85rem; }
+            .stat-label { font-size: .7rem; }
+            .stat-value { font-size: .78rem; }
+        }
     </style>
 </head>
 <body>
@@ -555,33 +574,48 @@
             }
         }
 
-        function format12HourTime(timeStr) {
-            if (!timeStr) return '-';
-            let rawTime = String(timeStr).trim();
-            if (rawTime.includes(' ') && !rawTime.includes('T')) {
-                rawTime = rawTime.replace(' ', 'T');
-            }
-            const d = new Date(rawTime);
-            if (isNaN(d.getTime())) return timeStr;
+        const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
+        const BET_LOCK_MINUTES = 15;
 
-            return d.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
+        function parseMyanmarTime(timeStr) {
+            if (!timeStr) return 0;
+            let raw = String(timeStr).trim().replace(' ', 'T');
+            if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(raw)) {
+                const t = new Date(raw).getTime();
+                return Number.isNaN(t) ? 0 : t;
+            }
+            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (!m) {
+                const t = new Date(raw).getTime();
+                return Number.isNaN(t) ? 0 : t;
+            }
+            const [, y, mo, d, h, mi, sec='00'] = m;
+            return Date.UTC(+y, +mo-1, +d, +h, +mi, +sec) - MYANMAR_OFFSET_MS;
         }
 
-        function isMatchExpired(timeStr) {
-            if (!timeStr) return false;
-            let rawTime = String(timeStr).trim();
-            if (rawTime.includes(' ') && !rawTime.includes('T')) {
-                rawTime = rawTime.replace(' ', 'T');
-            }
-            const matchMs = new Date(rawTime).getTime();
-            if (isNaN(matchMs)) return false;
-            return Date.now() >= matchMs;
+        function format12HourTime(timeStr) {
+            const ms = parseMyanmarTime(timeStr);
+            if (!ms) return timeStr || '-';
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Yangon', month: 'short', day: 'numeric',
+                year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+            }).format(new Date(ms));
+        }
+
+        function getBetLockAt(timeStr) {
+            const kickoff = parseMyanmarTime(timeStr);
+            return kickoff ? kickoff - BET_LOCK_MINUTES * 60 * 1000 : 0;
+        }
+
+        function isBettingLocked(timeStr) {
+            const lockAt = getBetLockAt(timeStr);
+            return lockAt > 0 && Date.now() >= lockAt;
+        }
+
+        function minutesToKickoff(timeStr) {
+            const ms = parseMyanmarTime(timeStr);
+            if (!ms) return null;
+            return Math.ceil((ms - Date.now()) / 60000);
         }
 
         function updateUserUI() {
@@ -644,6 +678,11 @@
                 const result = await res.json();
 
                 let matchesList = Array.isArray(result) ? result : (result.data || []);
+                window.__matchesById = {};
+                matchesList.forEach(m => {
+                    window.__matchesById[String(m.id)] = m;
+                    if (m.custom_match_id !== undefined) window.__matchesById[String(m.custom_match_id)] = m;
+                });
 
                 if (matchesList.length === 0) {
                     if (!isSilent) {
@@ -653,54 +692,68 @@
                 }
 
                 const newHtml = matchesList.map(m => {
-                    const teams = (m.match_name || '').split(' vs ');
+                    const teams = (m.match_name || '').split(/\s+vs\s+/i);
                     const homeTeam = teams[0] ? teams[0].trim() : 'Home';
                     const awayTeam = teams[1] ? teams[1].trim() : 'Away';
 
-                    const expired = isMatchExpired(m.match_time);
-                    const isClosed = (m.status !== 'Open') || expired;
+                    const kickoffMs = parseMyanmarTime(m.match_time);
+                    const expired = kickoffMs > 0 && Date.now() >= kickoffMs;
+                    const lockedByTime = m.betting_open === false || isBettingLocked(m.match_time);
+                    const isClosed = (m.status !== 'Open') || expired || lockedByTime;
+                    const mins = minutesToKickoff(m.match_time);
 
                     let statusBadgeClass = 'bg-success';
                     let statusText = m.status || 'Open';
-
-                    if (expired && m.status === 'Open') {
-                        statusBadgeClass = 'bg-danger';
+                    if (expired) {
+                        statusBadgeClass = 'bg-secondary';
                         statusText = 'Time Over';
                     } else if (m.status !== 'Open') {
                         statusBadgeClass = 'bg-secondary';
                         statusText = m.status;
+                    } else if (lockedByTime) {
+                        statusBadgeClass = 'bg-warning text-dark';
+                        statusText = 'Betting Closed';
                     }
 
+                    const lockInfo = !expired && mins !== null && mins <= BET_LOCK_MINUTES
+                        ? `<div class="small text-danger fw-bold mt-1"><i class="bi bi-lock-fill me-1"></i>လောင်းကြေးပိတ်ပါပြီ — ပွဲစရန် ${Math.max(mins, 0)} မိနစ်</div>`
+                        : `<div class="small text-muted mt-1">15 မိနစ်အလိုတွင် လောင်းကြေးပိတ်မည်</div>`;
+                    const disabledClass = isClosed ? 'disabled' : '';
+                    const clickHome = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(String(m.custom_match_id || m.id))}, ${JSON.stringify(String(m.match_name || ''))}, "Body", ${JSON.stringify(homeTeam)}, ${JSON.stringify(String(m.body_odds || ''))})'`;
+                    const clickAway = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(String(m.custom_match_id || m.id))}, ${JSON.stringify(String(m.match_name || ''))}, "Body", ${JSON.stringify(awayTeam)}, ${JSON.stringify(String(m.body_odds || ''))})'`;
+                    const clickOver = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(String(m.custom_match_id || m.id))}, ${JSON.stringify(String(m.match_name || ''))}, "Goal", "Over", ${JSON.stringify(String(m.goal_odds || ''))})'`;
+                    const clickUnder = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(String(m.custom_match_id || m.id))}, ${JSON.stringify(String(m.match_name || ''))}, "Goal", "Under", ${JSON.stringify(String(m.goal_odds || ''))})'`;
+
                     return `
-                        <div class="col-md-6 col-lg-4">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="card card-match h-100">
-                                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center gap-2">
                                     <span class="badge bg-secondary text-wrap">${m.league || 'LEAGUE'}</span>
                                     <span class="badge ${statusBadgeClass}">${statusText}</span>
                                 </div>
                                 <div class="card-body">
-                                    <h5 class="fw-bold text-center mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+                                        <span class="fw-bold">Match ID: ${m.custom_match_id || m.id}</span>
+                                        <span><i class="bi bi-clock me-1"></i>${format12HourTime(m.match_time)}</span>
+                                    </div>
+                                    <h5 class="fw-bold text-center mb-2">
                                         <span class="text-danger">${homeTeam}</span>
                                         <span class="text-muted fs-6 mx-1">vs</span>
                                         <span class="text-dark">${awayTeam}</span>
                                     </h5>
-                                    
-                                    <div class="text-center text-muted small mb-3">
-                                        <i class="bi bi-clock me-1"></i>${format12HourTime(m.match_time)}
-                                    </div>
+                                    <div class="text-center">${lockInfo}</div>
 
-                                    <!-- Body Odds -->
-                                    <div class="mb-3">
+                                    <div class="mb-3 mt-3">
                                         <div class="small fw-bold text-secondary mb-1">ဘော်ဒီ (Body Odds: ${m.body_odds || '0='})</div>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Body', '${homeTeam}', '${m.body_odds}')">
+                                                <div class="odds-btn ${disabledClass}" ${clickHome}>
                                                     <span class="odds-title text-danger">${homeTeam}</span>
                                                     <span class="odds-val text-primary">Body</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Body', '${awayTeam}', '${m.body_odds}')">
+                                                <div class="odds-btn ${disabledClass}" ${clickAway}>
                                                     <span class="odds-title text-dark">${awayTeam}</span>
                                                     <span class="odds-val text-primary">Body</span>
                                                 </div>
@@ -708,18 +761,17 @@
                                         </div>
                                     </div>
 
-                                    <!-- Goal Odds -->
                                     <div>
                                         <div class="small fw-bold text-secondary mb-1">ဂိုးပေါင်း (Goal Odds: ${m.goal_odds || '0='})</div>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Goal', 'Over', '${m.goal_odds}')">
+                                                <div class="odds-btn ${disabledClass}" ${clickOver}>
                                                     <span class="odds-title text-danger">Over (ဂိုးပေါ်)</span>
                                                     <span class="odds-val text-primary">Over</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
-                                                <div class="odds-btn ${isClosed ? 'disabled' : ''}" onclick="openBetModal('${m.custom_match_id || m.id}', '${m.match_name}', 'Goal', 'Under', '${m.goal_odds}')">
+                                                <div class="odds-btn ${disabledClass}" ${clickUnder}>
                                                     <span class="odds-title text-dark">Under (ဂိုးအောက်)</span>
                                                     <span class="odds-val text-primary">Under</span>
                                                 </div>
@@ -731,7 +783,6 @@
                         </div>
                     `;
                 }).join('');
-
                 container.innerHTML = newHtml;
             } catch (err) {
                 console.error('Matches fetch error:', err);
@@ -742,6 +793,11 @@
         }
 
         function openBetModal(matchId, matchName, betType, choice, oddsRate) {
+            const cachedMatch = window.__matchesById ? window.__matchesById[String(matchId)] : null;
+            if (cachedMatch && (cachedMatch.betting_open === false || isBettingLocked(cachedMatch.match_time))) {
+                alert('ပွဲစမည့်အချိန်မတိုင်မီ 15 မိနစ်အလိုမှ လောင်းကြေးပိတ်ထားပါသည်။');
+                return;
+            }
             if (!currentUser) {
                 alert('လောင်းကြေးထပ်ရန် ဦးစွာ Login ဝင်ပါ။');
                 new bootstrap.Modal(document.getElementById('loginModal')).show();
@@ -810,15 +866,19 @@
 
         async function handlePlaceBet(e) {
             e.preventDefault();
+            const submitBtn = e.submitter || document.querySelector('#betForm button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
             const amount = Number(document.getElementById('betAmount').value);
 
             if (!Number.isFinite(amount) || amount <= 0) {
                 alert('ထိုးငွေ ပမာဏ မှန်ကန်စွာ ထည့်ပါ။');
+                if (submitBtn) submitBtn.disabled = false;
                 return;
             }
 
             if (amount > currentUser.balance) {
                 alert('လက်ကျန်ငွေ မလုံလောက်ပါ။');
+                if (submitBtn) submitBtn.disabled = false;
                 return;
             }
 
@@ -853,6 +913,8 @@
                 }
             } catch (err) {
                 alert('Server အမှားအယွင်း ရှိနေပါသည်။');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
 
@@ -883,18 +945,22 @@
                 if (match) winFactor = -(parseInt(match[1]) / 100);
             }
 
-            let returnAmount = 0;
-            if (winFactor > 0) {
-                const grossProfit = amount * winFactor;
-                const netProfit = grossProfit * 0.95; // 5% Commission
-                returnAmount = amount + Math.floor(netProfit);
-            } else if (winFactor === 0) {
-                returnAmount = amount;
-            } else {
-                returnAmount = Math.floor(amount * (1 + winFactor));
+            let returnAmount = Number.isFinite(Number(bet.payout)) && Number(bet.payout) > 0 ? Number(bet.payout) : 0;
+            if (!returnAmount) {
+                if (winFactor > 0) {
+                    const grossProfit = amount * winFactor;
+                    const commission = grossProfit * 0.05;
+                    returnAmount = amount + Math.floor(grossProfit - commission);
+                } else if (winFactor === 0) {
+                    returnAmount = amount;
+                } else {
+                    returnAmount = Math.floor(amount * (1 + winFactor));
+                }
             }
 
-            const netProfitOrLoss = returnAmount - amount;
+            const netProfitOrLoss = Number.isFinite(Number(bet.net_profit)) && Number(bet.net_profit) !== 0
+                ? Number(bet.net_profit)
+                : returnAmount - amount;
 
             let badgeClass = 'bg-danger';
             let profitFormatted = `${netProfitOrLoss.toLocaleString()} Kyats`;
@@ -1007,19 +1073,25 @@
                                 <hr class="my-2 opacity-25">
 
                                 <div class="row g-2 text-center mt-1">
-                                    <div class="col-4">
+                                    <div class="col-6 col-md-3">
                                         <div class="stat-box">
                                             <div class="stat-label">Deposit (ထိုးငွေ)</div>
                                             <div class="stat-value text-dark">${Number(bet.amount || 0).toLocaleString()} Kyats</div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-6 col-md-3">
+                                        <div class="stat-box">
+                                            <div class="stat-label">Commission (5%)</div>
+                                            <div class="stat-value text-warning">${Number(bet.commission || 0).toLocaleString()} Kyats</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
                                         <div class="stat-box">
                                             <div class="stat-label">Payout (ပြန်ရငွေ)</div>
                                             <div class="stat-value text-primary">${summary.returnAmount.toLocaleString()} Kyats</div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-6 col-md-3">
                                         <div class="stat-box">
                                             <div class="stat-label">Win / Loss (မြတ်/ရှုံး)</div>
                                             <div class="stat-value ${summary.netProfitOrLoss > 0 ? 'text-success' : (summary.netProfitOrLoss < 0 ? 'text-danger' : 'text-secondary')}">
