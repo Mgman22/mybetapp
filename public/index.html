@@ -1598,7 +1598,7 @@
 
         function shortLeagueName(value) {
             const raw = String(value || '').trim();
-            const key = raw.toLowerCase().replace(/[._-]+/g, ' ').replace(/\\s+/g, ' ');
+            const key = raw.toLowerCase().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
             const aliases = {
                 'english premier league':'EPL', 'premier league':'EPL', 'epl':'EPL',
                 'english football league championship':'EFL CH', 'championship':'EFL CH',
@@ -1629,7 +1629,7 @@
             }
 
             const newHtml = matchesList.map(m => {
-                const teams = (m.match_name || '').split(/\\s+vs\\s+/i);
+                const teams = (m.match_name || '').split(/\s+vs\s+/i);
                 const actualHomeTeam = teams[0] ? teams[0].trim() : 'Home';
                 const actualAwayTeam = teams[1] ? teams[1].trim() : 'Away';
                 const favoredSide = String(m.body_favored_side || 'home').toLowerCase() === 'away' ? 'away' : 'home';
