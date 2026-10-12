@@ -580,6 +580,97 @@
         #betHistoryContainer .stat-value { color:#fff !important; }
     </style>
 
+
+    <style>
+        /* v34 Match Card layout: balanced home/body/away row with matching red/blue markets */
+        .match-card-v34 {
+            position:relative;
+            overflow:hidden;
+            padding:10px !important;
+            border:1px solid rgba(148,184,224,.22) !important;
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(37,99,235,.18), transparent 45%),
+                radial-gradient(ellipse at 100% 100%, rgba(20,184,166,.13), transparent 42%),
+                linear-gradient(145deg, rgba(14,31,55,.97), rgba(10,22,41,.96)) !important;
+            box-shadow:0 10px 26px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.055) !important;
+            border-radius:14px !important;
+        }
+        .match-card-v34::before {
+            content:""; position:absolute; inset:0 auto 0 0; width:3px;
+            background:linear-gradient(180deg,#ef4444 0%,#3b82f6 52%,#14b8a6 100%); opacity:.95;
+        }
+        .match-card-v34 > * { position:relative; z-index:1; }
+        .match-card-v34 .match-meta { align-items:center; margin-bottom:10px; gap:7px; }
+        .match-card-v34 .match-meta-left { gap:7px; }
+        .match-card-v34 .match-id { color:#f8fafc; font-size:11px; font-weight:900; letter-spacing:.02em; }
+        .match-card-v34 .match-league {
+            max-width:none; display:inline-flex; align-items:center; gap:2px;
+            padding:4px 7px; color:#dbeafe;
+            background:linear-gradient(135deg,rgba(96,165,250,.16),rgba(148,163,184,.08));
+            border:1px solid rgba(147,197,253,.24); letter-spacing:.035em; font-size:9.5px;
+        }
+        .match-card-v34 .match-league .bi { color:#fbbf24; font-size:9px; }
+        .match-meta-right { display:flex; align-items:center; justify-content:flex-end; gap:5px; flex:0 0 auto; }
+        .match-card-v34 .match-time { color:#bdcce0; font-size:9px; }
+        .match-card-v34 .match-status { font-size:8.5px; padding:4px 6px; }
+        .match-teams-odds-row {
+            display:grid; grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);
+            align-items:stretch; gap:5px; margin-bottom:8px;
+        }
+        .match-card-v34 .match-team-btn {
+            width:100%; min-width:0; min-height:43px; padding:6px 5px;
+            text-align:center; white-space:normal; overflow-wrap:anywhere;
+            line-height:1.15; font-size:10.5px; border-radius:9px;
+        }
+        .match-card-v34 .team-btn.favored { outline:1px solid rgba(248,113,113,.15); }
+        .match-card-v34 .team-btn.nonfavored { outline:1px solid rgba(96,165,250,.14); }
+        .body-odds-center {
+            display:flex; flex-direction:column; justify-content:center; align-items:center;
+            min-width:0; border-radius:9px; padding:4px 2px;
+            background:linear-gradient(180deg,rgba(239,68,68,.13),rgba(37,99,235,.13));
+            border:1px solid rgba(203,213,225,.16); color:#fff; text-align:center;
+        }
+        .body-odds-caption { font-size:7.5px; line-height:1.1; font-weight:900; letter-spacing:.08em; color:#b7c8df; }
+        .body-odds-center strong { font-size:11px; line-height:1.25; font-weight:900; overflow-wrap:anywhere; }
+        .match-gp-row, .match-both-row { gap:7px; }
+        .match-card-v34 .market-btn { min-height:37px; padding:6px 8px; border-radius:9px; }
+        .match-card-v34 .market-btn.over { background:linear-gradient(120deg,rgba(239,68,68,.96),rgba(185,28,28,.90)); }
+        .match-card-v34 .market-btn.under { background:linear-gradient(120deg,rgba(37,99,235,.96),rgba(29,78,216,.90)); }
+        .match-card-v34 .market-btn.both-over { background:linear-gradient(120deg,rgba(190,24,93,.96),rgba(159,18,57,.92)); }
+        .match-card-v34 .market-btn.both-under { background:linear-gradient(120deg,rgba(29,78,216,.96),rgba(14,116,144,.92)); }
+        .match-card-v34 .market-label, .match-card-v34 .both-label { font-size:10px; font-weight:850; }
+        .match-card-v34 .market-odds { min-width:0; max-width:54%; padding:3px 5px; font-size:9.5px; overflow:hidden; text-overflow:ellipsis; }
+        .match-kickoff {
+            display:flex; align-items:center; justify-content:center; gap:5px;
+            margin-top:8px; padding:6px 8px; border-radius:8px;
+            background:rgba(148,163,184,.075); border:1px solid rgba(148,163,184,.13);
+            color:#c5d4e7; font-size:9px;
+        }
+        .match-kickoff .bi { color:#7dd3fc; }
+        .match-kickoff strong { color:#f8fafc; font-size:10px; font-weight:900; font-variant-numeric:tabular-nums; }
+        .match-card-v34 .match-lock-note { color:#fca5a5; }
+        @media(max-width:575.98px) {
+            .match-card-v34 { padding:9px !important; }
+            .match-card-v34 .match-meta { gap:4px; }
+            .match-card-v34 .match-meta-left { gap:5px; }
+            .match-card-v34 .match-league { font-size:9px; padding:4px 5px; }
+            .match-meta-right { gap:4px; }
+            .match-card-v34 .match-time { font-size:8px; }
+            .match-card-v34 .match-status { font-size:8px; padding:4px 5px; }
+            .match-teams-odds-row { grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr); gap:4px; }
+            .match-card-v34 .match-team-btn { font-size:9.5px; min-height:42px; }
+            .body-odds-center strong { font-size:10px; }
+            .match-card-v34 .market-btn { padding:6px; }
+            .match-card-v34 .market-label, .match-card-v34 .both-label { font-size:9.5px; }
+            .match-card-v34 .market-odds { font-size:9px; padding:3px 4px; }
+        }
+        @media(max-width:380px) {
+            .match-card-v34 .match-time { display:none; }
+            .match-teams-odds-row { grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr); }
+            .match-card-v34 .match-team-btn { font-size:9px; padding:5px 3px; }
+        }
+    </style>
+
 </head>
 <body class="auth-required">
     <div id="loginGate">
@@ -1505,6 +1596,29 @@
             renderMatches(filtered);
         }
 
+        function shortLeagueName(value) {
+            const raw = String(value || '').trim();
+            const key = raw.toLowerCase().replace(/[._-]+/g, ' ').replace(/\\s+/g, ' ');
+            const aliases = {
+                'english premier league':'EPL', 'premier league':'EPL', 'epl':'EPL',
+                'english football league championship':'EFL CH', 'championship':'EFL CH',
+                'la liga':'LA LIGA', 'laliga':'LA LIGA', 'spanish la liga':'LA LIGA',
+                'serie a':'SERIE A', 'italian serie a':'SERIE A',
+                'bundesliga':'BUNDESLIGA', 'german bundesliga':'BUNDESLIGA',
+                'ligue 1':'LIGUE 1', 'french ligue 1':'LIGUE 1',
+                'uefa champions league':'UCL', 'champions league':'UCL', 'ucl':'UCL',
+                'uefa europa league':'UEL', 'europa league':'UEL', 'uel':'UEL',
+                'uefa conference league':'UECL', 'conference league':'UECL',
+                'myanmar national league':'MNL', 'myanmar league':'MNL', 'mnl':'MNL',
+                'thai league 1':'THAI 1', 'j league':'J1', 'j1 league':'J1',
+                'k league 1':'K1', 'saudi pro league':'SPL',
+                'major league soccer':'MLS', 'mls':'MLS',
+                'fa cup':'FA CUP', 'carabao cup':'EFL CUP',
+                'friendly':'FRIENDLY', 'international friendly':'INTL FRIENDLY'
+            };
+            return aliases[key] || (raw.length > 18 ? raw.slice(0, 16).trimEnd() + '…' : (raw || 'LEAGUE'));
+        }
+
         function renderMatches(matchesList) {
             const container = document.getElementById('matchesContainer');
             const countEl = document.getElementById('matchCount');
@@ -1515,7 +1629,7 @@
             }
 
             const newHtml = matchesList.map(m => {
-                const teams = (m.match_name || '').split(/\s+vs\s+/i);
+                const teams = (m.match_name || '').split(/\\s+vs\\s+/i);
                 const actualHomeTeam = teams[0] ? teams[0].trim() : 'Home';
                 const actualAwayTeam = teams[1] ? teams[1].trim() : 'Away';
                 const favoredSide = String(m.body_favored_side || 'home').toLowerCase() === 'away' ? 'away' : 'home';
@@ -1533,37 +1647,41 @@
                 else if (lockedByTime) statusText = 'Betting Closed';
                 const statusClass = isClosed ? 'closed' : 'open';
                 const lockInfo = !expired && mins !== null && mins <= lockMinutes
-                    ? `ပွဲစရန် ${Math.max(mins, 0)} မိနစ် — ${lockMinutes} မိနစ် lock` : '';
+                    ? `Starts in ${Math.max(mins, 0)} min · ${lockMinutes} min lock` : '';
                 const disabledClass = isClosed ? 'compact-disabled' : '';
                 const matchId = String(m.custom_match_id || m.id);
                 const matchName = String(m.match_name || '');
                 const bodyOdds = String(m.body_odds || '0=');
                 const goalOdds = String(m.goal_odds || '0=');
-                const clickFavored = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)})'`;
-                const clickNonFavored = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(nonFavoredTeam)}, ${JSON.stringify(bodyOdds)})'`;
-                const nonFavoredLabel = (favoredSide === 'away' && nonFavoredTeam === actualHomeTeam) ? `${nonFavoredTeam} (H)` : nonFavoredTeam;
+                const leagueFull = String(m.league || 'LEAGUE').trim();
+                const leagueShort = shortLeagueName(leagueFull);
+                const clickHome = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(actualHomeTeam)}, ${JSON.stringify(bodyOdds)})'`;
+                const clickAway = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(actualAwayTeam)}, ${JSON.stringify(bodyOdds)})'`;
                 const clickOver = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Goal", "Over", ${JSON.stringify(goalOdds)})'`;
                 const clickUnder = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Goal", "Under", ${JSON.stringify(goalOdds)})'`;
                 const clickBothOver = isClosed ? '' : `onclick='openBothBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)}, ${JSON.stringify(goalOdds)}, "Over")'`;
                 const clickBothUnder = isClosed ? '' : `onclick='openBothBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)}, ${JSON.stringify(goalOdds)}, "Under")'`;
+                const homeClass = favoredSide === 'home' ? 'favored' : 'nonfavored';
+                const awayClass = favoredSide === 'away' ? 'favored' : 'nonfavored';
                 return `
                     <div class="col-12 col-md-6 col-lg-4">
-                        <div class="match-compact h-100">
+                        <div class="match-compact match-card-v34 h-100">
                             <div class="match-meta">
                                 <div class="match-meta-left">
-                                    <span class="match-id">#${escapeHtml(matchId)}</span>
-                                    <span class="match-league" title="${escapeHtml(m.league || 'LEAGUE')}"><i class="bi bi-trophy-fill me-1"></i>${escapeHtml(m.league || 'LEAGUE')}</span>
+                                    <span class="match-id">${escapeHtml(matchId)}</span>
+                                    <span class="match-league" title="${escapeHtml(leagueFull)}"><i class="bi bi-trophy-fill me-1"></i>${escapeHtml(leagueShort)}</span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="match-time small">Close ${formatClosingTime(m.match_time, lockMinutes)}</span>
+                                <div class="match-meta-right">
+                                    <span class="match-time">Close ${formatClosingTime(m.match_time, lockMinutes)}</span>
                                     <span class="match-status ${statusClass}">${escapeHtml(statusText)}</span>
                                 </div>
                             </div>
-                            <div class="team-stack">
-                                <button type="button" class="team-btn favored ${disabledClass}" ${clickFavored} title="Favored team: ${escapeHtml(favoredTeam)}">${escapeHtml(favoredTeam)}</button>
-                                <button type="button" class="team-btn nonfavored ${disabledClass}" ${clickNonFavored} title="Other side: ${escapeHtml(nonFavoredTeam)}">${escapeHtml(nonFavoredLabel)}</button>
+                            <div class="match-teams-odds-row">
+                                <button type="button" class="team-btn ${homeClass} match-team-btn" ${clickHome} title="Home: ${escapeHtml(actualHomeTeam)}">${escapeHtml(actualHomeTeam)}</button>
+                                <div class="body-odds-center"><span class="body-odds-caption">BODY</span><strong>${escapeHtml(bodyOdds)}</strong></div>
+                                <button type="button" class="team-btn ${awayClass} match-team-btn" ${clickAway} title="Away: ${escapeHtml(actualAwayTeam)}">${escapeHtml(actualAwayTeam)}</button>
                             </div>
-                            <div class="market-grid">
+                            <div class="market-grid match-gp-row">
                                 <button type="button" class="market-btn over ${disabledClass}" ${clickOver}>
                                     <span class="market-label">Over</span><span class="market-odds">${escapeHtml(goalOdds)}</span>
                                 </button>
@@ -1571,7 +1689,7 @@
                                     <span class="market-label">Under</span><span class="market-odds">${escapeHtml(goalOdds)}</span>
                                 </button>
                             </div>
-                            <div class="market-grid market-grid-both">
+                            <div class="market-grid market-grid-both match-both-row">
                                 <button type="button" class="market-btn both-over ${disabledClass}" ${clickBothOver}>
                                     <span class="both-label">Both Over</span><span class="market-odds">2 Bets</span>
                                 </button>
@@ -1579,11 +1697,7 @@
                                     <span class="both-label">Both Under</span><span class="market-odds">2 Bets</span>
                                 </button>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="odds-summary body-summary">Body odds <b>${escapeHtml(bodyOdds)}</b></span>
-                                <span class="match-time"><i class="bi bi-clock me-1"></i>${format12HourTime(m.match_time)}</span>
-                                <span class="odds-summary ou-summary">GP odds <b>${escapeHtml(goalOdds)}</b></span>
-                            </div>
+                            <div class="match-kickoff"><i class="bi bi-clock-history me-1"></i><span>Kickoff</span><strong>${format12HourTime(m.match_time)}</strong></div>
                             ${lockInfo ? `<div class="match-lock-note"><i class="bi bi-lock-fill me-1"></i>${escapeHtml(lockInfo)}</div>` : ''}
                         </div>
                     </div>`;
