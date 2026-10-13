@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build:css": "tailwindcss -i ./public/admin-tailwind.css -o ./public/admin-local.css --minify",
+    "build:css": "tailwindcss -c ./tailwind.config.js -i ./public/admin-tailwind.css -o ./public/admin-local.css --minify",
     "prestart": "npm run build:css"
   },
   "dependencies": {
