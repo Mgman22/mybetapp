@@ -735,6 +735,26 @@
         }
     </style>
 
+
+    <style>
+        /* v36 My Bets: keep each card readable with stable two-column desktop layout */
+        #betHistoryContainer { align-items:stretch; }
+        #betHistoryContainer > [class*="col-"] { display:flex; flex-direction:column; }
+        #betHistoryContainer .mybet-card { width:100%; }
+        #betHistoryContainer .mybet-card-top { grid-template-columns:minmax(0,auto) minmax(0,1fr) minmax(0,auto); }
+        #betHistoryContainer .mybet-result-score { justify-self:center; }
+        #betHistoryContainer .mybet-match-name strong { color:#f8fafc; }
+        #betHistoryContainer .mybet-field-label { color:#c1d0e2; }
+        #betHistoryContainer .mybet-stat > span { color:#d0dbea; }
+        @media(min-width:1200px) {
+            #betHistoryContainer > .col-xl-5 { flex:0 0 50%; max-width:50%; }
+        }
+        @media(max-width:575.98px) {
+            #betHistoryContainer > [class*="col-"] { padding-left:6px; padding-right:6px; }
+            #betHistoryContainer .mybet-card-top { grid-template-columns:auto minmax(0,1fr) auto; }
+        }
+    </style>
+
 </head>
 <body class="auth-required">
     <div id="loginGate">
@@ -2276,7 +2296,7 @@
                     const net = Number(summary.netProfitOrLoss || 0);
                     const netClass = net > 0 ? 'positive' : (net < 0 ? 'negative' : 'neutral');
                     return `
-                        <div class="col-12 col-md-6 col-xl-5 mx-auto mb-3">
+                        <div class="col-12 col-sm-6 col-xl-5 mx-auto mb-3">
                             <article class="mybet-card">
                                 <div class="mybet-card-top">
                                     <span class="mybet-id">ID <strong>${escapeHtml(betId)}</strong></span>
