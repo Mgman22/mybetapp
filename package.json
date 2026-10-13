@@ -4,13 +4,16 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:css": "tailwindcss -c ./tailwind.config.js -i ./public/admin-tailwind.css -o ./public/admin-local.css --minify",
+    "prestart": "npm run build:css"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "tailwindcss": "^3.4.17"
   },
   "engines": {
     "node": ">=18.0.0"
