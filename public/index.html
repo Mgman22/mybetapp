@@ -2275,8 +2275,8 @@
                     const type = String(bet.bet_type || 'Body');
                     const choice = String(bet.choice || '-');
                     const choiceKey = choice.trim().toLowerCase();
-                    const bodyChoice = ['home', 'home team', 'h'].includes(choiceKey) ? homeTeam
-                        : (['away', 'away team', 'a'].includes(choiceKey) ? (awayTeam || choice) : choice);
+                    const bodyChoice = ['home', 'home team'].includes(choiceKey) ? homeTeam
+                        : (['away', 'away team'].includes(choiceKey) ? (awayTeam || choice) : choice);
                     const displayChoice = type.toLowerCase() === 'body' ? bodyChoice : choice;
                     const odds = String(bet.odds_rate || '-');
                     const dateKey = getBetHistoryDateKey(bet);
