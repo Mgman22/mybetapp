@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Small base safeguards for the local Admin Panel stylesheet. */
+html, body { overflow-x: hidden; }
