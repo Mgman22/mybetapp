@@ -671,6 +671,70 @@
         }
     </style>
 
+
+    <style>
+        /* v35 Match card alignment and readable My Bets cards */
+        .match-card-v34 .match-meta-v35 { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(84px,auto) minmax(0,1fr); align-items:center; gap:5px; width:100%; }
+        .match-card-v34 .match-meta-left { justify-content:flex-start; min-width:0; }
+        .match-card-v34 .match-close-center { justify-self:center; text-align:center; min-width:0; }
+        .match-card-v34 .match-close-center .match-time { color:#f1f5f9; font-weight:800; white-space:nowrap; font-size:9px; }
+        .match-card-v34 .match-status-wrap { justify-self:end; min-width:0; }
+        .match-teams-v35 { display:grid; grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr); align-items:stretch; gap:5px; margin-bottom:8px; }
+        .match-card-v34 .match-teams-v35 .match-team-btn { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:3px; min-height:46px; padding:6px 5px; text-align:center; }
+        .team-inline-name { display:block; max-width:100%; overflow-wrap:anywhere; line-height:1.15; }
+        .team-inline-odds { display:block; font-size:9px; font-weight:900; opacity:.95; line-height:1.05; }
+        .match-vs-v35 { align-self:center; justify-self:center; color:#cbd5e1; font-size:9px; font-weight:900; letter-spacing:.05em; }
+        .match-card-v34 .match-gp-row, .match-card-v34 .match-both-row { margin-top:6px; }
+        .match-card-v34 .match-kickoff { margin-top:9px; text-align:center; }
+        .mybets-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 12px; margin:0 0 14px; padding:12px 14px; border-radius:13px; background:linear-gradient(135deg,rgba(15,35,61,.94),rgba(14,29,49,.92)); border:1px solid rgba(148,184,224,.2); box-shadow:0 8px 22px rgba(0,0,0,.14); }
+        .mybets-toolbar-title { color:#f8fafc; font-size:14px; font-weight:900; }
+        .mybets-date-label { color:#cbd5e1; font-size:10px; font-weight:800; text-align:right; }
+        .mybets-date-controls { display:flex; grid-column:2; align-items:center; gap:6px; }
+        #betHistoryDateFilter { width:150px; color:#f8fafc; color-scheme:dark; background:rgba(255,255,255,.08); border:1px solid rgba(148,163,184,.3); }
+        .mybets-clear-date { color:#dbeafe; border:1px solid rgba(148,163,184,.28); background:rgba(255,255,255,.06); white-space:nowrap; }
+        .mybets-clear-date:hover { color:#fff; background:rgba(255,255,255,.13); }
+        .mybet-card { height:100%; overflow:hidden; padding:12px; border-radius:14px; color:#f8fafc; background:radial-gradient(ellipse at 0% 0%,rgba(37,99,235,.13),transparent 46%),linear-gradient(145deg,rgba(16,34,58,.98),rgba(9,21,38,.98)); border:1px solid rgba(148,184,224,.22); box-shadow:0 9px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.04); }
+        .mybet-card-top { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center; padding-bottom:10px; border-bottom:1px solid rgba(148,163,184,.18); }
+        .mybet-id { color:#b7c8df; font-size:10px; white-space:nowrap; } .mybet-id strong { color:#fff; font-size:12px; }
+        .mybet-result-score { display:flex; justify-content:center; align-items:center; gap:5px; min-width:0; color:#9fb2ca; font-size:9px; }
+        .mybet-result-score strong { color:#fff; font-size:11px; white-space:nowrap; }
+        .mybet-status { padding:4px 7px; border-radius:6px; font-size:9px; font-weight:900; letter-spacing:.035em; white-space:nowrap; }
+        .mybet-status.win { color:#bbf7d0; background:rgba(22,163,74,.2); border:1px solid rgba(74,222,128,.24); }
+        .mybet-status.lose { color:#fecaca; background:rgba(220,38,38,.2); border:1px solid rgba(248,113,113,.24); }
+        .mybet-status.draw { color:#e2e8f0; background:rgba(148,163,184,.16); border:1px solid rgba(148,163,184,.22); }
+        .mybet-status.pending { color:#fde68a; background:rgba(217,119,6,.2); border:1px solid rgba(251,191,36,.25); }
+        .mybet-match-line,.mybet-choice-line { display:grid; grid-template-columns:52px minmax(0,1fr); align-items:start; gap:8px; padding:10px 0; }
+        .mybet-field-label { color:#9fb2ca; font-size:10px; font-weight:800; }
+        .mybet-match-name { display:flex; align-items:center; justify-content:center; gap:7px; text-align:center; font-size:11px; line-height:1.3; overflow-wrap:anywhere; }
+        .mybet-match-name strong { min-width:0; font-weight:800; } .mybet-vs { color:#93c5fd; font-size:9px; font-weight:900; flex:0 0 auto; }
+        .mybet-choice-line { padding-top:0; } .mybet-choice-value { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:11px; }
+        .mybet-choice-value > strong { padding:3px 6px; border-radius:5px; color:#fff; font-size:9px; }
+        .mybet-choice-value.body > strong { background:#b91c1c; } .mybet-choice-value.gp > strong { background:#1d4ed8; }
+        .mybet-choice-value > span { color:#f8fafc; font-weight:800; } .mybet-choice-value > em { color:#cbd5e1; font-size:10px; font-style:normal; }
+        .mybet-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding-top:10px; border-top:1px solid rgba(148,163,184,.18); }
+        .mybet-stat { display:flex; flex-direction:column; gap:4px; min-width:0; padding:8px 5px; text-align:center; border-radius:8px; background:rgba(255,255,255,.045); }
+        .mybet-stat > span { color:#b7c8df; font-size:9px; font-weight:700; } .mybet-stat > strong { color:#fff; font-size:12px; font-weight:900; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+        .mybet-stat.positive > strong { color:#86efac; } .mybet-stat.negative > strong { color:#fca5a5; } .mybet-stat.neutral > strong { color:#e2e8f0; }
+        .mybet-date { margin-top:9px; color:#9fb2ca; text-align:right; font-size:9px; }
+        @media(max-width:575.98px) {
+            .mybets-toolbar { grid-template-columns:1fr; gap:6px; padding:10px; }
+            .mybets-date-label { text-align:left; } .mybets-date-controls { grid-column:1; width:100%; }
+            #betHistoryDateFilter { flex:1; width:auto; min-width:0; }
+            .mybet-card { padding:10px; } .mybet-card-top { gap:5px; }
+            .mybet-result-score { gap:3px; } .mybet-result-score strong { font-size:10px; }
+            .mybet-status { font-size:8px; padding:4px 5px; }
+            .mybet-match-line,.mybet-choice-line { grid-template-columns:43px minmax(0,1fr); gap:5px; }
+            .mybet-match-name { gap:4px; font-size:10px; } .mybet-stat > strong { font-size:11px; }
+        }
+        @media(max-width:380px) {
+            .match-card-v34 .match-meta-v35 { grid-template-columns:minmax(0,1fr) minmax(76px,auto) minmax(0,1fr); gap:3px; }
+            .match-card-v34 .match-meta-left { gap:4px; } .match-card-v34 .match-id { font-size:10px; }
+            .match-card-v34 .match-league { font-size:8px; padding:3px 4px; }
+            .match-card-v34 .match-close-center .match-time { font-size:8px; }
+            .match-card-v34 .match-status { font-size:7.5px; padding:3px 4px; }
+        }
+    </style>
+
 </head>
 <body class="auth-required">
     <div id="loginGate">
@@ -817,6 +881,14 @@
 
             <!-- BET HISTORY TAB -->
             <div class="tab-pane fade" id="pills-history" role="tabpanel">
+                <div class="mybets-toolbar">
+                    <div class="mybets-toolbar-title"><i class="bi bi-receipt-cutoff me-2"></i>My Bets</div>
+                    <label for="betHistoryDateFilter" class="mybets-date-label">Filter by date</label>
+                    <div class="mybets-date-controls">
+                        <input type="date" id="betHistoryDateFilter" class="form-control form-control-sm" aria-label="Filter My Bets by date" onchange="loadBetHistory()">
+                        <button type="button" class="btn btn-sm mybets-clear-date" onclick="clearBetHistoryDate()"><i class="bi bi-x-circle me-1"></i>All dates</button>
+                    </div>
+                </div>
                 <div id="betHistoryContainer" class="row">
                     <div class="text-center py-5">
                         <p class="text-muted">Please login to view your bets.</p>
@@ -1627,14 +1699,12 @@
                 container.innerHTML = `<div class="text-center py-5 text-muted">ရွေးထားသော filter အတိုင်း ပွဲစဉ်မရှိပါ။</div>`;
                 return;
             }
-
-            const newHtml = matchesList.map(m => {
+            container.innerHTML = matchesList.map(m => {
                 const teams = (m.match_name || '').split(/\s+vs\s+/i);
                 const actualHomeTeam = teams[0] ? teams[0].trim() : 'Home';
                 const actualAwayTeam = teams[1] ? teams[1].trim() : 'Away';
                 const favoredSide = String(m.body_favored_side || 'home').toLowerCase() === 'away' ? 'away' : 'home';
                 const favoredTeam = favoredSide === 'away' ? actualAwayTeam : actualHomeTeam;
-                const nonFavoredTeam = favoredSide === 'away' ? actualHomeTeam : actualAwayTeam;
                 const kickoffMs = parseMyanmarTime(m.match_time);
                 const expired = kickoffMs > 0 && nowMs() >= kickoffMs;
                 const lockMinutes = getMatchLockMinutes(m);
@@ -1663,46 +1733,37 @@
                 const clickBothUnder = isClosed ? '' : `onclick='openBothBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)}, ${JSON.stringify(goalOdds)}, "Under")'`;
                 const homeClass = favoredSide === 'home' ? 'favored' : 'nonfavored';
                 const awayClass = favoredSide === 'away' ? 'favored' : 'nonfavored';
+                const homeOdds = favoredSide === 'home' ? `<span class="team-inline-odds">(${escapeHtml(bodyOdds)})</span>` : '';
+                const awayOdds = favoredSide === 'away' ? `<span class="team-inline-odds">(${escapeHtml(bodyOdds)})</span>` : '';
                 return `
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="match-compact match-card-v34 h-100">
-                            <div class="match-meta">
+                            <div class="match-meta match-meta-v35">
                                 <div class="match-meta-left">
                                     <span class="match-id">${escapeHtml(matchId)}</span>
                                     <span class="match-league" title="${escapeHtml(leagueFull)}"><i class="bi bi-trophy-fill me-1"></i>${escapeHtml(leagueShort)}</span>
                                 </div>
-                                <div class="match-meta-right">
-                                    <span class="match-time">Close ${formatClosingTime(m.match_time, lockMinutes)}</span>
-                                    <span class="match-status ${statusClass}">${escapeHtml(statusText)}</span>
-                                </div>
+                                <div class="match-close-center"><span class="match-time">Close ${formatClosingTime(m.match_time, lockMinutes)}</span></div>
+                                <div class="match-status-wrap"><span class="match-status ${statusClass}">${escapeHtml(statusText)}</span></div>
                             </div>
-                            <div class="match-teams-odds-row">
-                                <button type="button" class="team-btn ${homeClass} match-team-btn" ${clickHome} title="Home: ${escapeHtml(actualHomeTeam)}">${escapeHtml(actualHomeTeam)}</button>
-                                <div class="body-odds-center"><span class="body-odds-caption">BODY</span><strong>${escapeHtml(bodyOdds)}</strong></div>
-                                <button type="button" class="team-btn ${awayClass} match-team-btn" ${clickAway} title="Away: ${escapeHtml(actualAwayTeam)}">${escapeHtml(actualAwayTeam)}</button>
+                            <div class="match-teams-v35">
+                                <button type="button" class="team-btn ${homeClass} match-team-btn" ${clickHome} title="Home: ${escapeHtml(actualHomeTeam)}"><span class="team-inline-name">${escapeHtml(actualHomeTeam)}</span>${homeOdds}</button>
+                                <span class="match-vs-v35">VS</span>
+                                <button type="button" class="team-btn ${awayClass} match-team-btn" ${clickAway} title="Away: ${escapeHtml(actualAwayTeam)}"><span class="team-inline-name">${escapeHtml(actualAwayTeam)}</span>${awayOdds}</button>
                             </div>
                             <div class="market-grid match-gp-row">
-                                <button type="button" class="market-btn over ${disabledClass}" ${clickOver}>
-                                    <span class="market-label">Over</span><span class="market-odds">${escapeHtml(goalOdds)}</span>
-                                </button>
-                                <button type="button" class="market-btn under ${disabledClass}" ${clickUnder}>
-                                    <span class="market-label">Under</span><span class="market-odds">${escapeHtml(goalOdds)}</span>
-                                </button>
+                                <button type="button" class="market-btn over ${disabledClass}" ${clickOver}><span class="market-label">Over</span><span class="market-odds">${escapeHtml(goalOdds)}</span></button>
+                                <button type="button" class="market-btn under ${disabledClass}" ${clickUnder}><span class="market-label">Under</span><span class="market-odds">${escapeHtml(goalOdds)}</span></button>
                             </div>
                             <div class="market-grid market-grid-both match-both-row">
-                                <button type="button" class="market-btn both-over ${disabledClass}" ${clickBothOver}>
-                                    <span class="both-label">Both Over</span><span class="market-odds">2 Bets</span>
-                                </button>
-                                <button type="button" class="market-btn both-under ${disabledClass}" ${clickBothUnder}>
-                                    <span class="both-label">Both Under</span><span class="market-odds">2 Bets</span>
-                                </button>
+                                <button type="button" class="market-btn both-over ${disabledClass}" ${clickBothOver}><span class="both-label">Both Over</span><span class="market-odds">2 Bets</span></button>
+                                <button type="button" class="market-btn both-under ${disabledClass}" ${clickBothUnder}><span class="both-label">Both Under</span><span class="market-odds">2 Bets</span></button>
                             </div>
                             <div class="match-kickoff"><i class="bi bi-clock-history me-1"></i><span>Kickoff</span><strong>${format12HourTime(m.match_time)}</strong></div>
                             ${lockInfo ? `<div class="match-lock-note"><i class="bi bi-lock-fill me-1"></i>${escapeHtml(lockInfo)}</div>` : ''}
                         </div>
                     </div>`;
             }).join('');
-            container.innerHTML = newHtml;
         }
 
         async function loadMatches(isSilent = false) {
@@ -2148,111 +2209,103 @@
             profileModalInstance.show();
         }
 
+        function clearBetHistoryDate() {
+            const dateInput = document.getElementById('betHistoryDateFilter');
+            if (dateInput) dateInput.value = '';
+            loadBetHistory();
+        }
+
+        function getBetHistoryDateKey(bet) {
+            const raw = bet.created_at || bet.placed_at || bet.bet_date || bet.date || bet.timestamp || '';
+            if (!raw) return '';
+            const text = String(raw);
+            const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (match) return match[1];
+            const parsed = new Date(raw);
+            if (Number.isNaN(parsed.getTime())) return '';
+            return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+        }
+
         async function loadBetHistory(isSilent = false) {
             const container = document.getElementById('betHistoryContainer');
+            if (!container) return;
             if (!currentUser) {
-                if (!isSilent) {
-                    container.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-person-lock fs-1 d-block mb-2 text-secondary"></i>Please login to view your bets.</div>`;
-                }
+                if (!isSilent) container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-person-lock fs-1 d-block mb-2 text-secondary"></i>Please login to view your bets.</div>`;
                 return;
             }
-
             try {
                 let betsRes = await fetch(`/api/user/bets?username=${encodeURIComponent(currentUser.username)}`);
-                if (!betsRes.ok) {
-                    betsRes = await fetch(`/api/bets?username=${encodeURIComponent(currentUser.username)}`);
-                }
-
+                if (!betsRes.ok) betsRes = await fetch(`/api/bets?username=${encodeURIComponent(currentUser.username)}`);
                 const matchesRes = await fetch('/api/matches');
                 const betsRaw = await betsRes.json().catch(() => null);
                 const matchesRaw = await matchesRes.json().catch(() => null);
-
-                let betsArray = Array.isArray(betsRaw) ? betsRaw : (betsRaw?.data || betsRaw?.bets || []);
+                const betsArray = Array.isArray(betsRaw) ? betsRaw : (betsRaw?.data || betsRaw?.bets || []);
                 const userBets = betsArray.filter(b => b.username === currentUser.username || !b.username);
-
+                const dateInput = document.getElementById('betHistoryDateFilter');
+                const selectedDate = dateInput ? dateInput.value : '';
+                const filteredBets = selectedDate ? userBets.filter(b => getBetHistoryDateKey(b) === selectedDate) : userBets;
+                const matchesArray = Array.isArray(matchesRaw) ? matchesRaw : (matchesRaw?.data || []);
                 const matchMap = {};
-                let matchesArray = Array.isArray(matchesRaw) ? matchesRaw : (matchesRaw?.data || []);
                 matchesArray.forEach(m => {
                     if (m.id !== undefined) matchMap[String(m.id)] = m;
                     if (m.custom_match_id !== undefined) matchMap[String(m.custom_match_id)] = m;
                 });
-
-                if (userBets.length === 0) {
-                    if (!isSilent) {
-                        container.innerHTML = `
-                            <div class="col-12 col-lg-8 mx-auto text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                                သင် No bets yet.
-                            </div>`;
-                    }
+                if (filteredBets.length === 0) {
+                    const message = selectedDate ? `No bets found for ${escapeHtml(selectedDate)}.` : 'သင် No bets yet.';
+                    if (!isSilent || selectedDate) container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>${message}</div>`;
                     return;
                 }
-
-                let totalDeposit = 0, totalPayout = 0, totalProfit = 0;
-
-                const cardsHtml = userBets.map((bet, idx) => {
+                const cardsHtml = filteredBets.map((bet, idx) => {
                     const summary = getBetSummary(bet);
-                    totalDeposit += Number(bet.amount) || 0;
-                    totalPayout += summary.returnAmount;
-                    totalProfit += summary.netProfitOrLoss;
-
                     const matchInfo = matchMap[String(bet.match_id)];
-                    let scoreBadge = '';
-                    if (matchInfo && matchInfo.home_score !== null && matchInfo.home_score !== undefined) {
-                        scoreBadge = `<span class="badge bg-dark text-warning ms-2">Result: ${matchInfo.home_score} - ${matchInfo.away_score}</span>`;
-                    }
-
-                    let choiceColorClass = 'text-primary';
-                    if (bet.choice === 'Over' || (bet.choice && bet.choice.includes('Over'))) choiceColorClass = 'text-danger';
-                    else if (bet.choice === 'Under' || (bet.choice && bet.choice.includes('Under'))) choiceColorClass = 'text-dark';
-
+                    const matchText = String(bet.match_name || matchInfo?.match_name || 'Match');
+                    const teamParts = matchText.split(/\s+vs\s+/i);
+                    const homeTeam = teamParts[0] ? teamParts[0].trim() : matchText;
+                    const awayTeam = teamParts[1] ? teamParts[1].trim() : '';
+                    const scoreText = matchInfo && matchInfo.home_score !== null && matchInfo.home_score !== undefined && matchInfo.away_score !== null && matchInfo.away_score !== undefined ? `${matchInfo.home_score} - ${matchInfo.away_score}` : 'Pending';
+                    const isPending = String(bet.status || 'Pending').toLowerCase() === 'pending';
+                    const resultClass = isPending ? 'pending' : (summary.netProfitOrLoss > 0 ? 'win' : (summary.netProfitOrLoss < 0 ? 'lose' : 'draw'));
+                    const resultLabel = isPending ? 'PENDING' : (summary.netProfitOrLoss > 0 ? 'WIN' : (summary.netProfitOrLoss < 0 ? 'LOSE' : String(bet.status || 'DRAW').toUpperCase()));
+                    const type = String(bet.bet_type || 'Body');
+                    const choice = String(bet.choice || '-');
+                    const odds = String(bet.odds_rate || '-');
+                    const dateKey = getBetHistoryDateKey(bet);
+                    const betId = bet.id || (idx + 1);
+                    const stake = Number(bet.amount || 0);
+                    const payout = Number(summary.returnAmount || 0);
+                    const net = Number(summary.netProfitOrLoss || 0);
+                    const netClass = net > 0 ? 'positive' : (net < 0 ? 'negative' : 'neutral');
                     return `
-                        <div class="card bet-card mb-3 shadow-sm">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-secondary">ID: ${bet.id || (idx + 1)}</span>
-                                    ${summary.statusBadge}
+                        <div class="col-12 col-md-6 col-xl-5 mx-auto mb-3">
+                            <article class="mybet-card">
+                                <div class="mybet-card-top">
+                                    <span class="mybet-id">ID <strong>${escapeHtml(betId)}</strong></span>
+                                    <span class="mybet-result-score"><span>Result</span><strong>${escapeHtml(scoreText)}</strong></span>
+                                    <span class="mybet-status ${resultClass}">${escapeHtml(resultLabel)}</span>
                                 </div>
-                                <h5 class="fw-bold text-dark mb-1">
-                                    ${bet.match_name || 'Match'} ${scoreBadge}
-                                </h5>
-                                <div class="text-muted small mb-2">
-                                    Category: <span class="text-primary fw-bold">${bet.bet_type || 'Body'}</span> | 
-                                    Selection: <span class="${choiceColorClass} fw-bold">${bet.choice || '-'}</span> 
-                                    <span class="text-dark">(${bet.odds_rate || '-'})</span>
+                                <div class="mybet-match-line">
+                                    <span class="mybet-field-label">Match</span>
+                                    <span class="mybet-match-name"><strong>${escapeHtml(homeTeam)}</strong><span class="mybet-vs">VS</span><strong>${escapeHtml(awayTeam || '—')}</strong></span>
                                 </div>
-                                <hr class="my-2 opacity-25">
-                                <div class="row g-2 text-center mt-1">
-                                    <div class="col-6 col-md-4">
-                                        <div class="stat-box">
-                                            <div class="stat-label">Stake</div>
-                                            <div class="stat-value text-dark">${Number(bet.amount || 0).toLocaleString()}</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-md-4">
-                                        <div class="stat-box">
-                                            <div class="stat-label">Payout</div>
-                                            <div class="stat-value text-primary">${summary.returnAmount.toLocaleString()}</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-md-4">
-                                        <div class="stat-box">
-                                            <div class="stat-label">Net P/L</div>
-                                            <div class="stat-value ${summary.netProfitOrLoss > 0 ? 'text-success' : (summary.netProfitOrLoss < 0 ? 'text-danger' : 'text-secondary')}">
-                                                ${summary.profitFormatted.replace(/\s*Kyats/g, "")}
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="mybet-choice-line">
+                                    <span class="mybet-field-label">Choice</span>
+                                    <span class="mybet-choice-value ${type.toLowerCase() === 'goal' || choice.toLowerCase().includes('over') || choice.toLowerCase().includes('under') ? 'gp' : 'body'}">
+                                        <strong>${escapeHtml(type === 'Goal' ? 'GP' : type)}</strong><span>${escapeHtml(choice)}</span><em>Odds ${escapeHtml(odds)}</em>
+                                    </span>
                                 </div>
-                            </div>
-                        </div>
-                    `;
+                                <div class="mybet-stats">
+                                    <div class="mybet-stat"><span>Stake</span><strong>${stake.toLocaleString()}</strong></div>
+                                    <div class="mybet-stat"><span>Payout</span><strong>${payout.toLocaleString()}</strong></div>
+                                    <div class="mybet-stat ${netClass}"><span>Net P/L</span><strong>${net > 0 ? '+' : ''}${net.toLocaleString()}</strong></div>
+                                </div>
+                                ${dateKey ? `<div class="mybet-date"><i class="bi bi-calendar3 me-1"></i>${escapeHtml(dateKey)}</div>` : ''}
+                            </article>
+                        </div>`;
                 }).join('');
-
-                container.innerHTML = `<div class="col-12 col-lg-6 col-xl-5 mx-auto">${cardsHtml}</div>`;
+                container.innerHTML = cardsHtml;
             } catch (err) {
                 console.error('Bet history load error:', err);
-                if (!isSilent) container.innerHTML = `<div class="text-center py-5 text-danger">စာရင်းများ ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
+                if (!isSilent) container.innerHTML = `<div class="col-12 text-center py-5 text-danger">စာရင်းများ ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
             }
         }
 
