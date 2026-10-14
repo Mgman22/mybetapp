@@ -71,6 +71,22 @@
             .admin-status-pill { display:none; }
             main { background:var(--stt-bg); }
         }
+    
+        /* Grouped dropdown navigation */
+        #sidebar .admin-nav { display:flex; flex-direction:column; gap:7px; }
+        #sidebar .admin-nav-link { display:flex; align-items:center; gap:10px; min-height:40px; font-size:13px; line-height:1.35; }
+        #sidebar .admin-nav-group { border:1px solid rgba(148,163,184,.12); border-radius:12px; overflow:hidden; background:rgba(255,255,255,.025); }
+        #sidebar .admin-nav-group[open] { background:rgba(255,255,255,.045); border-color:rgba(148,163,184,.22); }
+        #sidebar .admin-nav-group > summary { display:flex; align-items:center; gap:10px; list-style:none; cursor:pointer; user-select:none; padding:11px 12px; color:#cbd5e1; font-size:13px; font-weight:700; }
+        #sidebar .admin-nav-group > summary::-webkit-details-marker { display:none; }
+        #sidebar .admin-nav-group > summary:hover { color:#fff; background:rgba(148,163,184,.08); }
+        #sidebar .admin-nav-group-icon { width:20px; text-align:center; color:#94a3b8; font-size:15px; }
+        #sidebar .admin-nav-chevron { margin-left:auto; color:#64748b; font-size:16px; transition:transform .15s ease; }
+        #sidebar .admin-nav-group[open] .admin-nav-chevron { transform:rotate(180deg); }
+        #sidebar .admin-nav-submenu { display:flex; flex-direction:column; gap:3px; padding:2px 7px 8px 12px; }
+        #sidebar .admin-nav-submenu .admin-nav-link { padding-left:14px; border-radius:8px; }
+        @media (max-width:767.98px) { #sidebar .admin-nav { padding:10px; } #sidebar .admin-nav-group > summary { padding:12px; } }
+
     </style>
 
 <style>
@@ -123,29 +139,65 @@
     <div id="sidebar" class="w-64 bg-slate-900 text-white flex flex-col justify-between hidden md:flex transition-all duration-300">
         <div>
             <div class="p-5 border-b border-slate-800"><div class="stt-admin-brand text-xl font-extrabold text-white">STT Betting</div><div class="text-[10px] uppercase tracking-widest text-slate-500 mt-1">Administrator Console</div></div>
-            <nav class="p-4 space-y-2"><div class="admin-section-label">Overview</div>
-                <button onclick="switchPage('dashboard')" id="nav-dashboard" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Dashboard</button>
-                <div class="admin-section-label mt-5">Management</div>
-                <button onclick="switchPage('users')" id="nav-users" class="w-full text-left px-4 py-2.5 rounded bg-blue-600 font-semibold text-white">Marker</button>
-                <button onclick="switchPage('bet-limits')" id="nav-bet-limits" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-amber-300">Bet Limits</button>
-                <button onclick="switchPage('matches')" id="nav-matches" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Match Management</button>
-                <div class="admin-section-label mt-5">Operations</div>
-                <button onclick="switchPage('results')" id="nav-results" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Settlement</button>
-                <button onclick="switchPage('final-scores')" id="nav-final-scores" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-cyan-300">Final Score Manager</button>
-                <button onclick="switchPage('transactions')" id="nav-transactions" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-yellow-400">Transactions (ငွေသွင်း/ထုတ်)</button>
-                <button onclick="switchPage('bets')" id="nav-bets" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Betting Records</button>
-                <button onclick="switchPage('risk')" id="nav-risk" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-rose-400">Risk Management</button>
-                <button onclick="switchPage('ledger')" id="nav-ledger" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-emerald-400">Admin Ledger</button>
-                <div class="admin-section-label mt-5">Reports</div>
-                <button onclick="switchPage('reports')" id="nav-reports" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Reports</button>
-                <button onclick="switchPage('audit')" id="nav-audit" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Audit Log</button>
-                <div class="admin-section-label mt-5">System</div>
-                <button onclick="switchPage('settings')" id="nav-settings" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Settings</button>
-                <button onclick="switchPage('backup')" id="nav-backup" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Backup & Restore</button>
-                <!-- Added Notice Management Nav Button -->
-                <div class="admin-section-label mt-5">Website</div>
-                <button onclick="switchPage('notice')" id="nav-notice" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-cyan-400">Website Notice (ကြေညာချက်)</button>
-                <button onclick="switchPage('rules')" id="nav-rules" class="w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Rules & Regulations</button>
+            <nav class="admin-nav p-3 space-y-2" aria-label="Admin navigation">
+                <button onclick="switchPage('dashboard')" id="nav-dashboard" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">▦ <span>Dashboard</span></button>
+
+                <details class="admin-nav-group" open>
+                    <summary><span class="admin-nav-group-icon">♙</span><span>User Management</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('users')" id="nav-users" class="admin-nav-link w-full text-left px-4 py-2.5 rounded bg-blue-600 font-semibold text-white">Marker</button>
+                        <button onclick="switchPage('bet-limits')" id="nav-bet-limits" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-amber-300">Bet Limits</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">⚽</span><span>Match Center</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('matches')" id="nav-matches" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Match Management</button>
+                        <button onclick="switchPage('final-scores')" id="nav-final-scores" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-cyan-300">Final Score Manager</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">◈</span><span>Betting & Settlement</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('results')" id="nav-results" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Settlement</button>
+                        <button onclick="switchPage('bets')" id="nav-bets" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Betting Records</button>
+                        <button onclick="switchPage('risk')" id="nav-risk" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-rose-400">Risk Management</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">▤</span><span>Finance</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('transactions')" id="nav-transactions" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-yellow-400">Transactions (ငွေသွင်း/ထုတ်)</button>
+                        <button onclick="switchPage('ledger')" id="nav-ledger" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-emerald-400">Admin Ledger</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">▥</span><span>Reports & Audit</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('reports')" id="nav-reports" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Reports</button>
+                        <button onclick="switchPage('audit')" id="nav-audit" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Audit Log</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">◎</span><span>Website Content</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('notice')" id="nav-notice" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-cyan-400">Website Notice (ကြေညာချက်)</button>
+                        <button onclick="switchPage('rules')" id="nav-rules" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Rules & Regulations</button>
+                    </div>
+                </details>
+
+                <details class="admin-nav-group">
+                    <summary><span class="admin-nav-group-icon">⚙</span><span>System</span><span class="admin-nav-chevron">⌄</span></summary>
+                    <div class="admin-nav-submenu">
+                        <button onclick="switchPage('settings')" id="nav-settings" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Settings</button>
+                        <button onclick="switchPage('backup')" id="nav-backup" class="admin-nav-link w-full text-left px-4 py-2.5 rounded hover:bg-slate-800 text-slate-300">Backup & Restore</button>
+                    </div>
+                </details>
             </nav>
         </div>
         <div class="p-4 border-t border-slate-800 text-sm text-slate-400 flex justify-between items-center">
@@ -1136,6 +1188,11 @@
 
             const activePage = document.getElementById(`page-${page}`);
             const activeNav = document.getElementById(`nav-${page}`);
+            // Keep the selected page visible inside its dropdown navigation group.
+            if (activeNav) {
+                const activeGroup = activeNav.closest('details.admin-nav-group');
+                if (activeGroup) activeGroup.open = true;
+            }
             
             if (activePage) activePage.classList.remove('hidden');
             if (activeNav) {
@@ -1896,12 +1953,20 @@
         }
 
         // ================= TRANSACTIONS ================= //
-        function loadTransactions() {
-            fetch('/api/admin/transactions').then(r=>r.json()).then(result=>{
-                const list=result.data||[], tbody=document.getElementById('transaction-list');
+        async function loadTransactions() {
+            const tbody=document.getElementById('transaction-list');
+            if(!tbody)return;
+            tbody.innerHTML='<tr><td colspan="10" class="border p-4 text-center text-slate-500">Loading transactions...</td></tr>';
+            try {
+                const response=await fetch('/api/admin/transactions');
+                const raw=await response.text();
+                let result={};
+                try { result=raw?JSON.parse(raw):{}; } catch (_) { throw new Error('Server response was not valid JSON. Please restart the local server and sign in again.'); }
+                if(!response.ok || !result.success) throw new Error(result.error||result.message||`Could not load transactions (HTTP ${response.status})`);
+                const list=Array.isArray(result.data)?result.data:[];
                 tbody.innerHTML='';
                 if(!list.length){
-                    return tbody.innerHTML='<tr><td colspan="10" class="border p-4 text-center">No transactions</td></tr>';
+                    return tbody.innerHTML='<tr><td colspan="10" class="border p-4 text-center">No transactions found in the database.</td></tr>';
                 }
                 list.forEach((tx,i)=>{
                     const who = tx.process_by_who || (tx.processed_by === 'System' ? 'System' : (tx.processed_by ? 'Admin' : (tx.status === 'Completed' && ['Bet Placed','Parlay Bet','Payout','Refund'].includes(tx.type) ? 'System' : '-')));
@@ -1924,9 +1989,9 @@
                         : '-'}</td>
                     </tr>`;
                 });
-            }).catch(e=>{
-                document.getElementById('transaction-list').innerHTML='<tr><td colspan="10" class="border p-4 text-center text-red-600">Failed to load transactions</td></tr>';
-            });
+            } catch(e) {
+                tbody.innerHTML=`<tr><td colspan="10" class="border p-4 text-center text-red-600">${escapeHtml(e.message||'Failed to load transactions')}</td></tr>`;
+            }
         }
 
         async function actionTx(transaction_id, status, buttonEl) {
@@ -2228,7 +2293,7 @@ async function setMatchLock(id,minutes){ try{ const r=await fetch(`/api/admin/ma
                     });
                     if(current && matches.some(m=>String(m.id)===current)) select.value=current;
                 })
-                .catch(err=>console.error('Risk load error:',err));
+                .catch(err=>{console.error('Risk load error:',err);const select=document.getElementById('risk-match-select');if(select)select.innerHTML='<option value="">Failed to load matches — refresh</option>';alert('Risk Management data could not be loaded: '+(err.message||'Unknown error'));});
         }
 
         async function openRiskPopup(matchId){

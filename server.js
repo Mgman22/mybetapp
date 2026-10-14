@@ -2205,7 +2205,9 @@ app.get('/api/admin/risk-summary', requireAdmin, (req, res) => {
 
 app.get('/api/admin/risk/match/:id', requireAdmin, (req, res) => {
     const key = req.params.id;
-    db.get(`SELECT * FROM matches WHERE id=? OR custom_match_id=?`, [key,key], (matchErr, match) => {
+    // The admin selector sends the internal database ID. Resolve by that ID only;
+    // matching custom_match_id in the same query can select the wrong match when IDs overlap.
+    db.get(`SELECT * FROM matches WHERE id=?`, [key], (matchErr, match) => {
         if (matchErr) return res.status(500).json({success:false,error:matchErr.message});
         if (!match) return res.status(404).json({success:false,message:'Match not found'});
 
@@ -2275,7 +2277,8 @@ app.get('/api/admin/risk/match/:id', requireAdmin, (req, res) => {
 app.post('/api/admin/risk/layout-confirm', requireAdmin, (req,res)=>{
     const key=req.body.match_id;
     if(!key) return res.status(400).json({success:false,message:'Match ID is required'});
-    db.get(`SELECT * FROM matches WHERE id=? OR custom_match_id=?`,[key,key],(me,match)=>{
+    // match_id is the internal database ID submitted by the risk modal.
+    db.get(`SELECT * FROM matches WHERE id=?`,[key],(me,match)=>{
         if(me)return res.status(500).json({success:false,error:me.message});
         if(!match)return res.status(404).json({success:false,message:'Match not found'});
         db.all(`SELECT bet_type,choice,amount,status FROM bets WHERE match_db_id=? AND (status IS NULL OR status='Pending')`,[match.id],(be,bets)=>{
