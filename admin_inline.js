@@ -303,95 +303,32 @@ const _adminNativeFetch = window.fetch.bind(window);
         let betLimitUsers = [];
         let betLimitMatches = [];
         let savedBetLimits = [];
-
-        function limitAmountLabel(value) {
-            const n = Number(value || 0);
-            return n > 0 ? n.toLocaleString() : 'Unlimited';
-        }
-
+        function limitAmountLabel(value) { const n=Number(value||0); return n>0?n.toLocaleString():'Unlimited'; }
+        function scopeLabel(row) { return row.scope_type==='all'?'All Markers · All Matches':row.scope_type==='all-markers'?'All Markers · Match #'+(row.custom_match_id||row.match_db_id):row.scope_type==='all-matches'?(row.username||'Marker')+' · All Matches':(row.username||'Marker')+' · Match #'+(row.custom_match_id||row.match_db_id); }
         async function loadBetLimits() {
-            const tbody = document.getElementById('bet-limit-list');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="border p-5 text-center text-slate-500">Loading limits...</td></tr>';
+            const tbody=document.getElementById('bet-limit-list'); if(tbody) tbody.innerHTML='<tr><td colspan="8" class="border p-5 text-center text-slate-500">Loading limits...</td></tr>';
             try {
-                const [usersRes, matchesRes, limitsRes] = await Promise.all([
-                    fetch('/api/users'), fetch('/api/matches'), fetch('/api/admin/bet-limits')
-                ]);
-                const [usersData, matchesData, limitsData] = await Promise.all([usersRes.json(), matchesRes.json(), limitsRes.json()]);
-                if (!usersRes.ok || !matchesRes.ok || !limitsRes.ok || !limitsData.success) throw new Error(limitsData.message || 'Could not load bettor or match data.');
-                betLimitUsers = usersData.data || [];
-                betLimitMatches = matchesData.data || [];
-                savedBetLimits = limitsData.data || [];
-                const userSelect = document.getElementById('limit-user-select');
-                const matchSelect = document.getElementById('limit-match-select');
-                const oldUser = userSelect.value; const oldMatch = matchSelect.value;
-                userSelect.innerHTML = '<option value="">Choose Bettor</option>' + betLimitUsers.map(u => `<option value="${Number(u.id)}">${escapeHtml(u.username)}</option>`).join('');
-                matchSelect.innerHTML = '<option value="">Choose Match</option>' + betLimitMatches.map(m => `<option value="${Number(m.id)}">#${escapeHtml(m.custom_match_id || m.id)} — ${escapeHtml(m.match_name || '')}</option>`).join('');
-                if (betLimitUsers.some(u => String(u.id) === oldUser)) userSelect.value = oldUser;
-                if (betLimitMatches.some(m => String(m.id) === oldMatch)) matchSelect.value = oldMatch;
-                tbody.innerHTML = savedBetLimits.length ? savedBetLimits.map(row => `
-                    <tr class="hover:bg-slate-50">
-                        <td class="border p-2.5 font-semibold">${escapeHtml(row.username || '-')}</td>
-                        <td class="border p-2.5"><div class="font-bold">#${escapeHtml(row.custom_match_id || row.match_db_id)}</div><div class="text-xs text-slate-500">${escapeHtml(row.match_name || '')}</div></td>
-                        <td class="border p-2.5 text-center font-semibold text-rose-700">${limitAmountLabel(row.body_home_limit)}</td>
-                        <td class="border p-2.5 text-center font-semibold text-blue-700">${limitAmountLabel(row.body_away_limit)}</td>
-                        <td class="border p-2.5 text-center font-semibold text-emerald-700">${limitAmountLabel(row.gp_over_limit)}</td>
-                        <td class="border p-2.5 text-center font-semibold text-indigo-700">${limitAmountLabel(row.gp_under_limit)}</td>
-                        <td class="border p-2.5 text-center text-xs text-slate-500">${escapeHtml(row.updated_at || '-')}</td>
-                        <td class="border p-2.5 text-center whitespace-nowrap"><button type="button" onclick="editBetLimit(${Number(row.user_id)},${Number(row.match_db_id)})" class="bg-amber-500 text-white px-2.5 py-1 rounded text-xs font-bold">Edit</button> <button type="button" onclick="deleteBetLimit(${Number(row.user_id)},${Number(row.match_db_id)})" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">Remove</button></td>
-                    </tr>`).join('') : '<tr><td colspan="8" class="border p-5 text-center text-slate-500">No limits saved yet. All sides are currently unlimited.</td></tr>';
-            } catch (err) {
-                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="border p-5 text-center text-red-600">${escapeHtml(err.message || 'Failed to load limits.')}</td></tr>`;
-            }
+                const [usersRes,matchesRes,limitsRes]=await Promise.all([fetch('/api/users'),fetch('/api/matches'),fetch('/api/admin/bet-limits')]);
+                const [usersData,matchesData,limitsData]=await Promise.all([usersRes.json(),matchesRes.json(),limitsRes.json()]);
+                if(!usersRes.ok||!matchesRes.ok||!limitsRes.ok||!limitsData.success) throw new Error(limitsData.message||'Could not load marker or match data.');
+                betLimitUsers=usersData.data||[]; betLimitMatches=matchesData.data||[]; savedBetLimits=limitsData.data||[];
+                const us=document.getElementById('limit-user-select'), ms=document.getElementById('limit-match-select'), oldU=us.value, oldM=ms.value;
+                us.innerHTML='<option value="">Choose Marker</option><option value="all">All Markers</option>'+betLimitUsers.map(u=>`<option value="${Number(u.id)}">${escapeHtml(u.username)}</option>`).join('');
+                ms.innerHTML='<option value="">Choose Match</option><option value="all">All Matches</option>'+betLimitMatches.map(m=>`<option value="${Number(m.id)}">#${escapeHtml(m.custom_match_id||m.id)} — ${escapeHtml(m.match_name||'')}</option>`).join('');
+                if([...betLimitUsers.map(u=>String(u.id)),'all'].includes(oldU)) us.value=oldU; if([...betLimitMatches.map(m=>String(m.id)),'all'].includes(oldM)) ms.value=oldM;
+                tbody.innerHTML=savedBetLimits.length?savedBetLimits.map(row=>`<tr class="hover:bg-slate-50"><td class="border p-2.5 font-semibold">${escapeHtml(row.username||'All Markers')}</td><td class="border p-2.5"><div class="font-bold">${escapeHtml(row.match_db_id==0?'All Matches':'#'+(row.custom_match_id||row.match_db_id))}</div><div class="text-xs text-slate-500">${escapeHtml(row.match_name||'')}</div></td><td class="border p-2.5 text-center font-semibold text-rose-700">${limitAmountLabel(row.body_home_limit)}</td><td class="border p-2.5 text-center font-semibold text-blue-700">${limitAmountLabel(row.body_away_limit)}</td><td class="border p-2.5 text-center font-semibold text-emerald-700">${limitAmountLabel(row.gp_over_limit)}</td><td class="border p-2.5 text-center font-semibold text-indigo-700">${limitAmountLabel(row.gp_under_limit)}</td><td class="border p-2.5 text-center text-xs text-slate-500">${escapeHtml(row.updated_at||'-')}</td><td class="border p-2.5 text-center whitespace-nowrap"><button type="button" onclick="editBetLimit(${Number(row.user_id)},${Number(row.match_db_id)})" class="bg-amber-500 text-white px-2.5 py-1 rounded text-xs font-bold">Edit</button> <button type="button" onclick="deleteBetLimit(${Number(row.user_id)},${Number(row.match_db_id)})" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">Remove</button></td></tr>`).join(''):'<tr><td colspan="8" class="border p-5 text-center text-slate-500">No limits saved yet. All selections are unlimited.</td></tr>';
+            } catch(err) { if(tbody) tbody.innerHTML=`<tr><td colspan="8" class="border p-5 text-center text-red-600">${escapeHtml(err.message||'Failed to load limits.')}</td></tr>`; }
         }
-
-        function editBetLimit(userId, matchDbId) {
-            const row = savedBetLimits.find(x => Number(x.user_id) === Number(userId) && Number(x.match_db_id) === Number(matchDbId));
-            if (!row) return;
-            document.getElementById('limit-user-select').value = String(userId);
-            document.getElementById('limit-match-select').value = String(matchDbId);
-            document.getElementById('limit-body-home').value = Number(row.body_home_limit || 0);
-            document.getElementById('limit-body-away').value = Number(row.body_away_limit || 0);
-            document.getElementById('limit-gp-over').value = Number(row.gp_over_limit || 0);
-            document.getElementById('limit-gp-under').value = Number(row.gp_under_limit || 0);
-            document.getElementById('limit-user-select').focus();
-            window.scrollTo({ top:0, behavior:'smooth' });
-        }
-
-        function clearBetLimitForm() {
-            document.getElementById('limit-user-select').value = '';
-            document.getElementById('limit-match-select').value = '';
-            ['limit-body-home','limit-body-away','limit-gp-over','limit-gp-under'].forEach(id => document.getElementById(id).value = '0');
-        }
-
+        function editBetLimit(userId,matchDbId) { const row=savedBetLimits.find(x=>Number(x.user_id)===Number(userId)&&Number(x.match_db_id)===Number(matchDbId)); if(!row)return; document.getElementById('limit-user-select').value=userId===0?'all':String(userId); document.getElementById('limit-match-select').value=matchDbId===0?'all':String(matchDbId); document.getElementById('limit-body-home').value=Number(row.body_home_limit||0); document.getElementById('limit-body-away').value=Number(row.body_away_limit||0); document.getElementById('limit-gp-over').value=Number(row.gp_over_limit||0); document.getElementById('limit-gp-under').value=Number(row.gp_under_limit||0); window.scrollTo({top:0,behavior:'smooth'}); }
+        function clearBetLimitForm() { document.getElementById('limit-user-select').value=''; document.getElementById('limit-match-select').value=''; ['limit-body-home','limit-body-away','limit-gp-over','limit-gp-under'].forEach(id=>document.getElementById(id).value='0'); }
         async function saveBetLimit() {
-            const payload = {
-                user_id:Number(document.getElementById('limit-user-select').value),
-                match_db_id:Number(document.getElementById('limit-match-select').value),
-                body_home_limit:Number(document.getElementById('limit-body-home').value || 0),
-                body_away_limit:Number(document.getElementById('limit-body-away').value || 0),
-                gp_over_limit:Number(document.getElementById('limit-gp-over').value || 0),
-                gp_under_limit:Number(document.getElementById('limit-gp-under').value || 0)
-            };
-            if (!payload.user_id || !payload.match_db_id) return alert('Choose a Bettor and Match first.');
-            if (Object.entries(payload).some(([k,v]) => k.endsWith('_limit') && (!Number.isFinite(v) || v < 0))) return alert('Limits must be zero or a positive number.');
-            try {
-                const res = await fetch('/api/admin/bet-limits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.success) return alert(data.message || 'Could not save bet limits.');
-                alert('Bet limits saved.');
-                await loadBetLimits();
-            } catch (err) { alert(err.message || 'Could not save bet limits.'); }
+            const us=document.getElementById('limit-user-select').value, ms=document.getElementById('limit-match-select').value;
+            const payload={user_id:us==='all'?0:Number(us),match_db_id:ms==='all'?0:Number(ms),body_home_limit:Number(document.getElementById('limit-body-home').value||0),body_away_limit:Number(document.getElementById('limit-body-away').value||0),gp_over_limit:Number(document.getElementById('limit-gp-over').value||0),gp_under_limit:Number(document.getElementById('limit-gp-under').value||0)};
+            if(us===''||ms==='') return alert('Choose Marker Scope and Match Scope first.');
+            if(Object.entries(payload).some(([k,v])=>k.endsWith('_limit')&&(!Number.isFinite(v)||v<0))) return alert('Limits must be zero or a positive number.');
+            try { const res=await fetch('/api/admin/bet-limits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const data=await res.json().catch(()=>({})); if(!res.ok||!data.success)return alert(data.message||'Could not save bet limits.'); alert('Bet limits saved.'); await loadBetLimits(); } catch(err){alert(err.message||'Could not save bet limits.');}
         }
-
-        async function deleteBetLimit(userId, matchDbId) {
-            if (!confirm('Remove this limit rule? Bets on these sides will be unlimited until a new limit is saved.')) return;
-            try {
-                const res = await fetch(`/api/admin/bet-limits?user_id=${encodeURIComponent(userId)}&match_db_id=${encodeURIComponent(matchDbId)}`,{method:'DELETE'});
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.success) return alert(data.message || 'Could not remove bet limits.');
-                await loadBetLimits();
-            } catch (err) { alert(err.message || 'Could not remove bet limits.'); }
-        }
+        async function deleteBetLimit(userId,matchDbId) { if(!confirm('Remove this bet limit rule?'))return; try { const res=await fetch(`/api/admin/bet-limits?user_id=${encodeURIComponent(userId)}&match_db_id=${encodeURIComponent(matchDbId)}`,{method:'DELETE'}); const data=await res.json().catch(()=>({})); if(!res.ok||!data.success)return alert(data.message||'Could not remove bet limit.'); await loadBetLimits(); } catch(err){alert(err.message||'Could not remove bet limit.');} }
 
         function loadUsers() {
             fetch('/api/users')

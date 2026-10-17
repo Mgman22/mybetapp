@@ -297,6 +297,22 @@ db.serialize(() => {
     )`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_bettor_match_limits_user_match ON bettor_match_limits(user_id, match_db_id)`);
 
+    // Generalized bet-limit rules: user_id=0 means all markers; match_db_id=0 means all matches.
+    db.run(`CREATE TABLE IF NOT EXISTS bet_limit_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 0,
+        match_db_id INTEGER NOT NULL DEFAULT 0,
+        body_home_limit REAL NOT NULL DEFAULT 0,
+        body_away_limit REAL NOT NULL DEFAULT 0,
+        gp_over_limit REAL NOT NULL DEFAULT 0,
+        gp_under_limit REAL NOT NULL DEFAULT 0,
+        updated_by TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, match_db_id)
+    )`);
+    db.run(`INSERT OR IGNORE INTO bet_limit_rules (user_id,match_db_id,body_home_limit,body_away_limit,gp_over_limit,gp_under_limit,updated_by,updated_at)
+            SELECT user_id,match_db_id,body_home_limit,body_away_limit,gp_over_limit,gp_under_limit,updated_by,updated_at FROM bettor_match_limits`);
+
     // 5. Risk Forwards Table
     db.run(`CREATE TABLE IF NOT EXISTS risk_forwards (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -373,6 +389,8 @@ db.serialize(() => {
         value TEXT DEFAULT '',
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+    db.run(`INSERT OR IGNORE INTO site_settings(key,value) VALUES('marker_low_balance_threshold','100000')`);
+    db.run(`INSERT OR IGNORE INTO site_settings(key,value) VALUES('marker_critical_balance_threshold','25000')`);
     db.run(`INSERT OR IGNORE INTO site_settings(key,value) VALUES('global_lock_minutes','15')`);
     db.run(`INSERT OR IGNORE INTO site_settings (key, value) VALUES ('bettor_notice', 'Admin Notice: Welcome to our betting service.')`);
     db.run(`INSERT OR IGNORE INTO site_settings (key, value) VALUES ('bettor_notice_enabled', '1')`);
@@ -1112,12 +1130,13 @@ function getGlobalLockMinutes(callback) {
 
 app.get('/api/time', requireAuth, (req,res)=>res.json({success:true,server_now_ms:Date.now(),server_now_iso:new Date().toISOString(),timezone:YGN_TIMEZONE}));
 
-// ================= PER-BETTOR / PER-MATCH BET LIMITS ================= //
+// ================= GENERALIZED BET LIMIT RULES ================= //
 app.get('/api/admin/bet-limits', requireAdmin, (req, res) => {
-    db.all(`SELECT l.*, u.username, m.custom_match_id, m.match_name, m.league
-            FROM bettor_match_limits l
-            JOIN users u ON u.id = l.user_id
-            JOIN matches m ON m.id = l.match_db_id
+    db.all(`SELECT l.*, CASE WHEN l.user_id=0 THEN 'All Markers' ELSE u.username END AS username,
+                   CASE WHEN l.match_db_id=0 THEN 'All Matches' ELSE m.custom_match_id END AS custom_match_id,
+                   CASE WHEN l.match_db_id=0 THEN 'All Matches' ELSE m.match_name END AS match_name,
+                   CASE WHEN l.user_id=0 AND l.match_db_id=0 THEN 'all' WHEN l.user_id=0 THEN 'all-markers' WHEN l.match_db_id=0 THEN 'all-matches' ELSE 'specific' END AS scope_type
+            FROM bet_limit_rules l LEFT JOIN users u ON u.id=l.user_id LEFT JOIN matches m ON m.id=l.match_db_id
             ORDER BY l.updated_at DESC, l.id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ success:false, message:'Could not load bet limits.', error:err.message });
         res.json({ success:true, data:rows || [] });
@@ -1125,45 +1144,42 @@ app.get('/api/admin/bet-limits', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/bet-limits', requireAdmin, (req, res) => {
-    const userId = Number(req.body.user_id);
-    const matchDbId = Number(req.body.match_db_id);
+    const rawUser = String(req.body.user_id ?? '');
+    const rawMatch = String(req.body.match_db_id ?? '');
+    const userId = rawUser === 'all' || rawUser === '0' ? 0 : Number(rawUser);
+    const matchDbId = rawMatch === 'all' || rawMatch === '0' ? 0 : Number(rawMatch);
     const fields = ['body_home_limit','body_away_limit','gp_over_limit','gp_under_limit'];
     const values = fields.map(k => Number(req.body[k] ?? 0));
-    if (!Number.isInteger(userId) || userId <= 0 || !Number.isInteger(matchDbId) || matchDbId <= 0 ||
-        values.some(v => !Number.isFinite(v) || v < 0)) {
-        return res.status(400).json({ success:false, message:'Choose a bettor and match, and enter valid limits (0 = unlimited).' });
-    }
-    db.get(`SELECT id FROM users WHERE id=? AND role='user'`, [userId], (userErr, user) => {
-        if (userErr) return res.status(500).json({ success:false, error:userErr.message });
-        if (!user) return res.status(404).json({ success:false, message:'Bettor account not found.' });
-        db.get(`SELECT id FROM matches WHERE id=?`, [matchDbId], (matchErr, match) => {
-            if (matchErr) return res.status(500).json({ success:false, error:matchErr.message });
-            if (!match) return res.status(404).json({ success:false, message:'Match not found.' });
-            db.run(`INSERT INTO bettor_match_limits (user_id,match_db_id,body_home_limit,body_away_limit,gp_over_limit,gp_under_limit,updated_by,updated_at)
+    if (!Number.isInteger(userId) || userId < 0 || !Number.isInteger(matchDbId) || matchDbId < 0 || values.some(v => !Number.isFinite(v) || v < 0))
+        return res.status(400).json({ success:false, message:'Choose valid marker/match scopes and enter non-negative limits (0 = unlimited).' });
+    const checkUser = cb => userId === 0 ? cb(null, true) : db.get(`SELECT id FROM users WHERE id=? AND role='user'`, [userId], (e,r)=>cb(e,!!r));
+    const checkMatch = cb => matchDbId === 0 ? cb(null, true) : db.get(`SELECT id FROM matches WHERE id=?`, [matchDbId], (e,r)=>cb(e,!!r));
+    checkUser((userErr, userOk) => {
+        if (userErr) return res.status(500).json({success:false,error:userErr.message});
+        if (!userOk) return res.status(404).json({success:false,message:'Marker account not found.'});
+        checkMatch((matchErr, matchOk) => {
+            if (matchErr) return res.status(500).json({success:false,error:matchErr.message});
+            if (!matchOk) return res.status(404).json({success:false,message:'Match not found.'});
+            db.run(`INSERT INTO bet_limit_rules (user_id,match_db_id,body_home_limit,body_away_limit,gp_over_limit,gp_under_limit,updated_by,updated_at)
                     VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-                    ON CONFLICT(user_id,match_db_id) DO UPDATE SET
-                      body_home_limit=excluded.body_home_limit,
-                      body_away_limit=excluded.body_away_limit,
-                      gp_over_limit=excluded.gp_over_limit,
-                      gp_under_limit=excluded.gp_under_limit,
-                      updated_by=excluded.updated_by,
-                      updated_at=CURRENT_TIMESTAMP`,
+                    ON CONFLICT(user_id,match_db_id) DO UPDATE SET body_home_limit=excluded.body_home_limit,body_away_limit=excluded.body_away_limit,
+                    gp_over_limit=excluded.gp_over_limit,gp_under_limit=excluded.gp_under_limit,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`,
                 [userId,matchDbId,...values,req.authUser.username], function(err) {
-                if (err) return res.status(500).json({ success:false, message:'Could not save bet limits.', error:err.message });
-                res.json({ success:true, message:'Bet limits saved.' });
-            });
+                    if (err) return res.status(500).json({success:false,message:'Could not save bet limits.',error:err.message});
+                    res.json({success:true,message:'Bet limits saved.'});
+                });
         });
     });
 });
 
 app.delete('/api/admin/bet-limits', requireAdmin, (req, res) => {
-    const userId = Number(req.query.user_id);
-    const matchDbId = Number(req.query.match_db_id);
-    if (!Number.isInteger(userId) || userId <= 0 || !Number.isInteger(matchDbId) || matchDbId <= 0)
-        return res.status(400).json({ success:false, message:'Invalid bettor or match.' });
-    db.run(`DELETE FROM bettor_match_limits WHERE user_id=? AND match_db_id=?`, [userId,matchDbId], function(err) {
-        if (err) return res.status(500).json({ success:false, error:err.message });
-        res.json({ success:true, message:this.changes ? 'Bet limit removed. This selection is now unlimited.' : 'No saved limit was found.' });
+    const userRaw=String(req.query.user_id ?? ''), matchRaw=String(req.query.match_db_id ?? '');
+    const userId=userRaw==='all'||userRaw==='0'?0:Number(userRaw), matchDbId=matchRaw==='all'||matchRaw==='0'?0:Number(matchRaw);
+    if (!Number.isInteger(userId) || userId < 0 || !Number.isInteger(matchDbId) || matchDbId < 0)
+        return res.status(400).json({success:false,message:'Invalid marker or match scope.'});
+    db.run(`DELETE FROM bet_limit_rules WHERE user_id=? AND match_db_id=?`,[userId,matchDbId],function(err){
+        if(err) return res.status(500).json({success:false,error:err.message});
+        res.json({success:true,message:this.changes?'Bet limit rule removed.':'No saved rule was found.'});
     });
 });
 
@@ -1275,6 +1291,26 @@ app.post('/api/admin/matches/:id/lock', requireAdmin, (req,res)=>{
   }
   const lm=Number(raw); if(![2,5,10,15].includes(lm)) return res.status(400).json({success:false,message:'Lock must be 2, 5, 10 or 15 minutes'});
   db.run(`UPDATE matches SET lock_mode='override', lock_minutes=? WHERE id=? OR custom_match_id=?`,[lm,req.params.id,req.params.id],function(e){if(e)return res.status(500).json({success:false,error:e.message});res.json({success:true,lock_mode:'override',lock_minutes:lm});});
+});
+app.get('/api/admin/settings/marker-balance-thresholds', requireAdmin, (req,res)=>{
+    db.all(`SELECT key,value FROM site_settings WHERE key IN ('marker_low_balance_threshold','marker_critical_balance_threshold')`, [], (e,rows)=>{
+        if(e)return res.status(500).json({success:false,error:e.message});
+        const cfg=Object.fromEntries((rows||[]).map(r=>[r.key,Number(r.value)]));
+        res.json({success:true,low_balance_threshold:Number.isFinite(cfg.marker_low_balance_threshold)?cfg.marker_low_balance_threshold:100000,critical_balance_threshold:Number.isFinite(cfg.marker_critical_balance_threshold)?cfg.marker_critical_balance_threshold:25000});
+    });
+});
+app.post('/api/admin/settings/marker-balance-thresholds', requireAdmin, (req,res)=>{
+    const low=Number(req.body.low_balance_threshold), critical=Number(req.body.critical_balance_threshold);
+    if(!Number.isFinite(low)||!Number.isFinite(critical)||low<0||critical<0||critical>=low||low>1000000000000||critical>1000000000000){
+        return res.status(400).json({success:false,message:'Low balance must be greater than Critical balance; both values must be non-negative.'});
+    }
+    db.serialize(()=>{
+        db.run(`INSERT INTO site_settings(key,value,updated_at) VALUES('marker_low_balance_threshold',?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP`,[String(low)]);
+        db.run(`INSERT INTO site_settings(key,value,updated_at) VALUES('marker_critical_balance_threshold',?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP`,[String(critical)],e=>{
+            if(e)return res.status(500).json({success:false,error:e.message});
+            res.json({success:true,low_balance_threshold:low,critical_balance_threshold:critical});
+        });
+    });
 });
 app.get('/api/admin/settings/lock', requireAdmin,(req,res)=>getGlobalLockMinutes((e,n)=>res.json({success:!e,minutes:n})));
 app.post('/api/admin/settings/lock', requireAdmin,(req,res)=>{const n=Number(req.body.minutes);if(![2,5,10,15].includes(n))return res.status(400).json({success:false,message:'Invalid lock minutes'});db.run(`INSERT INTO site_settings(key,value,updated_at) VALUES('global_lock_minutes',?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP`,[String(n)],e=>{if(e)return res.status(500).json({success:false,error:e.message});res.json({success:true,minutes:n});});});
@@ -1605,11 +1641,21 @@ function checkBettorMatchLimits(userId, username, incomingBets, matchMap, callba
     }).filter(n => n > 0))];
     if (!dbMatchIds.length) return callback(null, null);
     const marks = dbMatchIds.map(() => '?').join(',');
-    db.all(`SELECT * FROM bettor_match_limits WHERE user_id=? AND match_db_id IN (${marks})`, [userId, ...dbMatchIds], (limitErr, limitRows) => {
+    db.all(`SELECT * FROM bet_limit_rules WHERE (user_id IN (0,?) AND match_db_id IN (0,${marks}))`, [userId, ...dbMatchIds], (limitErr, limitRows) => {
         if (limitErr) return callback(limitErr);
         db.all(`SELECT match_db_id, bet_type, choice, amount FROM bets WHERE username=? AND match_db_id IN (${marks})`, [username, ...dbMatchIds], (usedErr, existingBets) => {
             if (usedErr) return callback(usedErr);
-            const limitsByMatch = new Map((limitRows || []).map(row => [String(row.match_db_id), row]));
+            const limitsByMatch = new Map();
+            for (const matchId of dbMatchIds) {
+                const applicable = (limitRows || []).filter(r => Number(r.match_db_id) === matchId || Number(r.match_db_id) === 0)
+                    .sort((a,b) => ((Number(b.user_id)===userId?2:0)+(Number(b.match_db_id)===matchId?1:0))-((Number(a.user_id)===userId?2:0)+(Number(a.match_db_id)===matchId?1:0)));
+                // Specific marker+match > marker-wide > all-markers+match > global.
+                const exact = (limitRows || []).filter(r => Number(r.user_id)===userId && Number(r.match_db_id)===matchId)[0];
+                const markerWide = (limitRows || []).filter(r => Number(r.user_id)===userId && Number(r.match_db_id)===0)[0];
+                const allMarkerMatch = (limitRows || []).filter(r => Number(r.user_id)===0 && Number(r.match_db_id)===matchId)[0];
+                const global = (limitRows || []).filter(r => Number(r.user_id)===0 && Number(r.match_db_id)===0)[0];
+                limitsByMatch.set(String(matchId), exact || markerWide || allMarkerMatch || global || null);
+            }
             const matchByDbId = new Map();
             for (const b of incomingBets) {
                 const m = matchMap.get(String(b.match_id));
