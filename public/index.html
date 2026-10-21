@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT Betting</title>
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body.auth-required > *:not(#loginGate) { display: none !important; }
+        body.rules-required > *:not(#loginRulesGate) { display: none !important; }
+        #loginGate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; padding: 20px; z-index: 9999; position: relative; }
+        #loginGate .gate-card { width: 100%; max-width: 420px; }
+        #loginRulesGate { position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(2,6,23,.94); color:#f8fafc; }
+        #loginRulesGate .rules-gate-card { width:100%; max-width:640px; max-height:92vh; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; border:1px solid rgba(148,163,184,.26); background:linear-gradient(145deg,#0f1d31,#111827); box-shadow:0 28px 80px rgba(0,0,0,.48); }
+        #loginRulesGate .rules-gate-body { overflow-y:auto; padding:18px; color:#e5edf8; line-height:1.7; white-space:normal; }
+        #loginRulesGate .rules-gate-body > div { white-space:pre-wrap; overflow-wrap:anywhere; margin-bottom:8px; }
+
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #172033;
+        }
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            font-size: 1.12rem;
+            color: #f8fafc !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .stt-brand-mark {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #39d98a, #0f9f6e);
+            color: #082f25;
+            box-shadow: 0 3px 10px rgba(57,217,138,.22);
+            font-size: 18px;
+        }
+        .stt-brand-name { line-height: 1; }
+        .stt-brand-subtitle {
+            display: block;
+            margin-top: 4px;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        .stt-navbar {
+            background: linear-gradient(110deg, #0b1220, #172b35) !important;
+            border-bottom: 1px solid rgba(57,217,138,.25);
+        }
+        @media (max-width: 480px) {
+            .navbar-brand { font-size: 1rem; letter-spacing: .8px; }
+            .stt-brand-mark { width: 31px; height: 31px; }
+            .stt-brand-subtitle { font-size: 8px; }
+        }
+        .card-match {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            background: #ffffff;
+        }
+        .card-match:hover {
+            transform: translateY(-2px);
+        }
+        .odds-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .odds-btn:hover {
+            background-color: #e9ecef;
+            border-color: #0d6efd;
+        }
+        .odds-btn.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+            background-color: #e9ecef;
+            border-color: #ccc;
+        }
+        .odds-btn .odds-title {
+            font-size: 0.85rem;
+            display: block;
+            font-weight: 600;
+        }
+        .odds-btn .odds-val {
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        /* Live Indicator Animation */
+        .pulse-icon {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #198754;
+            box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+            animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+        }
+        /* Bet History & Statement Styling */
+        .bet-card, .statement-card {
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            background: #ffffff;
+        }
+        .stat-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 8px 4px;
+        }
+        .stat-label {
+            font-size: 0.82rem;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        .stat-value {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        /* Payment Selection Cards */
+        .payment-option {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .payment-option.active {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+
+        /* --- New Hero Section Styles --- */
+        .hero {
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #064e3b 100%);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #39d98a;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(57,217,138,0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .user-info .hello {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            opacity: 0.75;
+            text-transform: uppercase;
+        }
+        .user-info h2 {
+            margin: 1px 0 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .hero-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .hero-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hero-btn.primary {
+            background: #39d98a;
+            color: #0f172a;
+            border-color: #39d98a;
+        }
+        .hero-btn:hover { opacity: 0.9; }
+        .hero { isolation: isolate; }
+        .hero::before { content:""; position:absolute; inset:-45% -10%; background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.10) 50%,transparent 65%); transform:translateX(-55%) rotate(6deg); animation:heroShine 7s ease-in-out infinite; pointer-events:none; z-index:0; }
+        .hero::after { content:""; position:absolute; width:180px; height:180px; right:-65px; bottom:-85px; border-radius:50%; background:rgba(57,217,138,.13); filter:blur(6px); animation:heroOrb 5.5s ease-in-out infinite; pointer-events:none; z-index:0; }
+        .hero > * { position:relative; z-index:1; }
+        .hero-clock-wrap { display:flex; align-items:center; gap:8px; }
+        .hero-clock-dot { width:8px; height:8px; border-radius:50%; background:#39d98a; box-shadow:0 0 0 0 rgba(57,217,138,.45); animation:clockPulse 1.8s infinite; flex:0 0 auto; }
+        .hero-live-time { font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+        @keyframes heroShine { 0%,45%{transform:translateX(-55%) rotate(6deg)} 75%,100%{transform:translateX(55%) rotate(6deg)} }
+        @keyframes heroOrb { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-18px,-10px) scale(1.08)} }
+        @keyframes clockPulse { 0%{box-shadow:0 0 0 0 rgba(57,217,138,.45)} 70%{box-shadow:0 0 0 8px rgba(57,217,138,0)} 100%{box-shadow:0 0 0 0 rgba(57,217,138,0)} }
+
+        /* Admin Banner Style */
+        .admin-banner {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            padding: 7px 10px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 0;
+            font-size: 11.5px;
+            overflow: hidden;
+        }
+        .admin-banner .banner-icon { font-size: 14px; flex: 0 0 auto; }
+        .admin-banner .banner-text { overflow: hidden; white-space: nowrap; width: 100%; position: relative; }
+        .admin-banner .banner-track {
+            display: inline-block;
+            min-width: max-content;
+            padding-left: 100%;
+            animation: sttMarquee 18s linear infinite;
+            will-change: transform;
+        }
+        .admin-banner .banner-track b { color: #fca5a5; }
+        @keyframes sttMarquee {
+            from { transform: translate3d(0,0,0); }
+            to { transform: translate3d(-100%,0,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .admin-banner .banner-track { animation: none; padding-left: 0; }
+        }
+
+        /* Compact bettor match cards */
+        .matches-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .matches-filter {
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid #dfe4ea;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fff;
+        }
+        .match-compact {
+            border: 1px solid #e7ebf0;
+            border-radius: 10px;
+            background: #fff;
+            padding: 9px;
+            box-shadow: 0 2px 8px rgba(15,23,42,.045);
+        }
+        .match-meta {
+            display:flex; align-items:center; justify-content:space-between; gap:6px;
+            margin-bottom:7px;
+        }
+        .match-meta-left { display:flex; align-items:center; gap:5px; min-width:0; }
+        .match-id { font-size:10.5px; font-weight:800; color:#475569; white-space:nowrap; }
+        .match-league { font-size:10px; font-weight:700; background:#eef1f5; color:#334155; border-radius:6px; padding:4px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:48%; }
+        .match-status { font-size:9px; font-weight:800; padding:4px 6px; border-radius:6px; white-space:nowrap; }
+        .match-status.open { background:#dcfce7; color:#166534; }
+        .match-status.closed { background:#e5e7eb; color:#475569; }
+        .match-time { font-size:10px; color:#64748b; font-weight:600; white-space:nowrap; }
+        .team-vs-row { display:grid; grid-template-columns:1fr 24px 1fr; gap:5px; align-items:center; margin-bottom:7px; }
+        .team-btn, .market-btn {
+            border:0; border-radius:7px; min-height:34px; padding:5px 7px;
+            font-size:11px; font-weight:800; line-height:1.1;
+            cursor:pointer; transition:transform .12s, opacity .12s;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        .team-btn:hover, .market-btn:hover { transform:translateY(-1px); }
+        .team-btn.home { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+        .team-btn.away { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+        .vs-mark { text-align:center; font-size:9px; font-weight:900; color:#94a3b8; }
+        .market-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .market-btn { display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; }
+        .market-btn.over { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+        .market-btn.under { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+        .market-label { font-size:10.5px; }
+        .market-odds { font-size:10px; font-weight:900; background:rgba(255,255,255,.82); padding:3px 5px; border-radius:5px; min-width:34px; text-align:center; box-shadow:0 1px 2px rgba(15,23,42,.08); }
+        .compact-disabled { opacity:.48; cursor:not-allowed; transform:none !important; }
+
+        .odds-summary { font-size:9.5px; font-weight:800; padding:3px 6px; border-radius:6px; line-height:1; white-space:nowrap; }
+        .odds-summary b { margin-left:2px; font-size:10px; }
+        .body-summary { background:#fff1f2; color:#be123c; border:1px solid #ffe4e6; }
+        .ou-summary { background:#eff6ff; color:#1d4ed8; border:1px solid #dbeafe; }
+        .match-lock-note { font-size:9.5px; color:#dc2626; font-weight:700; margin-top:6px; text-align:center; }
+        .match-count { font-size:10.5px; color:#64748b; font-weight:600; margin-bottom:8px; }
+
+        /* VIP and Time Grid */
+        .hero-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .hero-card-box {
+            background: rgba(15, 23, 42, 0.45);
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(6px);
+        }
+        .hero-card-box small {
+            display: block;
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .hero-card-box .val {
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-top: 1px;
+        }
+        .vip-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        /* v31: compact hero, header clock/account dropdown and final-score ticker */
+        .stt-navbar { position:sticky; top:0; z-index:1065 !important; overflow:visible !important; }
+        .stt-navbar .container { overflow:visible !important; }
+        .navbar-account-tools { display:flex; align-items:center; justify-content:flex-end; gap:9px; }
+        .header-logout { display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; border-radius:10px !important; padding:7px 10px !important; color:#fff !important; background:rgba(185,28,28,.25) !important; border:1px solid rgba(248,113,113,.32) !important; font-size:.78rem !important; font-weight:800 !important; }
+        .header-logout:hover,.header-logout:focus { color:#fff !important; background:rgba(185,28,28,.42) !important; border-color:rgba(248,113,113,.55) !important; }
+        .account-toggle { color:#f1f5ff !important; background:rgba(255,255,255,.085) !important; border:1px solid rgba(255,255,255,.18) !important; border-radius:10px !important; padding:7px 11px !important; font-weight:700 !important; font-size:.8rem !important; white-space:nowrap; }
+        .account-toggle:hover,.account-toggle:focus { background:rgba(255,255,255,.15) !important; }
+        .account-menu { z-index:1080 !important; min-width:205px; padding:7px; margin-top:8px !important; border-radius:12px !important; color:#e8f1ff !important; background:#101d30 !important; border:1px solid rgba(255,255,255,.16) !important; box-shadow:0 18px 42px rgba(0,0,0,.42) !important; }
+        .account-menu .dropdown-item { color:#e8f1ff; border-radius:7px; padding:8px 10px; font-size:.84rem; }
+        .account-menu .dropdown-item:hover,.account-menu .dropdown-item:focus { color:#fff; background:rgba(96,165,250,.17); }
+        .account-menu .dropdown-item-text { color:#a9bed8; font-size:.72rem; overflow-wrap:anywhere; }
+        .account-menu .dropdown-divider { border-color:rgba(255,255,255,.14); }
+        .hero { padding:12px 15px !important; margin-bottom:12px !important; }
+        .hero-top { margin-bottom:0 !important; min-height:38px; }
+        .avatar { width:38px !important; height:38px !important; font-size:14px !important; }
+        .user-profile { gap:10px !important; }
+        .user-info h2 { font-size:16px !important; }
+        .hero-info-grid,.hero-actions { display:none !important; }
+        .admin-banner { margin-top:0 !important; margin-bottom:0 !important; padding:6px 9px !important; font-size:11px !important; }
+        .bettor-tabs-wrap { margin-top:12px; }
+        .admin-banner .banner-track { animation-duration:22s; }
+        .score-banner { display:flex; align-items:center; gap:8px; margin-top:7px; padding:6px 9px; min-width:0; overflow:hidden; border-radius:9px; border:1px solid rgba(96,165,250,.28); background:rgba(37,99,235,.11); color:#e8f1ff; font-size:10.5px; }
+        .score-banner-icon { flex:0 0 auto; color:#93c5fd; font-size:13px; }
+        .score-banner-label { flex:0 0 auto; color:#bfdbfe; font-size:9px; font-weight:900; letter-spacing:.07em; white-space:nowrap; }
+        .score-banner-text { min-width:0; flex:1 1 auto; overflow:hidden; white-space:nowrap; position:relative; }
+        .score-track { display:inline-flex; align-items:center; gap:20px; min-width:max-content; padding-left:100%; animation:scoreMarquee 30s linear infinite; will-change:transform; }
+        .score-chip { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; color:#dbeafe; }
+        .score-chip .score-id { color:#9db8db; font-size:9px; }
+        .score-chip .score-teams { color:#f8fafc; font-weight:700; }
+        .score-chip .score-number { display:inline-block; padding:2px 6px; border-radius:5px; color:#fff; background:rgba(59,130,246,.25); border:1px solid rgba(147,197,253,.23); font-weight:900; }
+        .score-chip .score-ft { color:#86efac; font-size:8.5px; font-weight:900; }
+        @keyframes scoreMarquee { from{transform:translate3d(0,0,0)} to{transform:translate3d(-100%,0,0)} }
+        @media (prefers-reduced-motion:reduce) { .score-track { animation:none; padding-left:0; } }
+        @media (max-width:575.98px) {
+            .stt-navbar .container { gap:7px; }
+            .navbar-brand { margin-right:0; }
+            .stt-brand-subtitle, .navbar-brand > .badge { display:none !important; }
+            .navbar-account-tools { gap:5px; }
+            .header-logout { padding:6px 8px !important; font-size:.72rem !important; }
+            .header-logout .me-1 { margin-right:.2rem !important; }
+            .account-toggle { padding:6px 8px !important; font-size:.75rem !important; }
+            .hero { padding:10px 12px !important; }
+            .score-banner { gap:6px; padding:6px 7px; }
+            .score-banner-label { font-size:8px; }
+        }
+
+        /* Bettor navigation tabs - clean pill style */
+        .bettor-tabs-wrap {
+            margin-bottom: 20px;
+        }
+        .bettor-tabs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding: 0;
+        }
+        .bettor-tabs::-webkit-scrollbar { display: none; }
+        .bettor-tab {
+            flex: 0 0 auto;
+            border: 0;
+            background: #eef1f5;
+            color: #111827;
+            border-radius: 11px;
+            padding: 10px 17px;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1;
+            min-height: 38px;
+            transition: all .18s ease;
+        }
+        .bettor-tab:hover { background: #e2e6ec; }
+        .bettor-tab.active {
+            background: #111827;
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(15,23,42,.12);
+        }
+        .bettor-tab i { display: none; }
+
+        .profile-panel {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .profile-item {
+            display:flex; justify-content:space-between; align-items:center;
+            padding: 13px 0; border-bottom:1px solid #edf0f3;
+        }
+        .profile-item:last-child { border-bottom:0; }
+        .profile-label { color:#6b7280; font-size:12px; font-weight:600; }
+        .profile-value { color:#111827; font-size:14px; font-weight:700; }
+
+        @media (max-width: 767.98px) {
+            body { overflow-x: hidden; }
+            .navbar { padding-top: .55rem; padding-bottom: .55rem; }
+            .hero-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .hero-actions { width: 100%; justify-content: space-between; }
+            .hero-btn { flex: 1; text-align: center; }
+            .hero-info-grid { grid-template-columns: 1fr; }
+            #pills-tab { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start !important; scrollbar-width: thin; }
+            #pills-tab .nav-item { flex: 0 0 auto; }
+            #pills-tab .nav-link { white-space: nowrap; font-size: .78rem; padding: .5rem .65rem; }
+            .matches-toolbar { grid-template-columns: 1fr 1fr; }
+            .match-compact { padding: 8px; }
+            .team-btn, .market-btn { min-height: 33px; font-size: 10.5px; padding: 5px 6px; }
+            .match-league { max-width: 45%; }
+            .modal-dialog { margin: .5rem; }
+            .modal-body { padding: .85rem; }
+        }
+        /* STT Glossy Glass / Glassmorphism */
+        body {
+            background: radial-gradient(circle at 12% 8%, rgba(0,153,255,.20), transparent 28%), radial-gradient(circle at 88% 18%, rgba(123,92,255,.18), transparent 30%), linear-gradient(135deg,#07111f 0%,#0c1d32 45%,#07111f 100%);
+            color:#e8f1ff; min-height:100vh;
+        }
+        body::before { content:""; position:fixed; inset:0; pointer-events:none; background:linear-gradient(120deg,rgba(255,255,255,.035),transparent 35%,rgba(72,148,255,.035)); z-index:-1; }
+        .stt-navbar { background:rgba(7,17,31,.72) !important; backdrop-filter:blur(18px) saturate(150%); -webkit-backdrop-filter:blur(18px) saturate(150%); border-bottom:1px solid rgba(255,255,255,.13); box-shadow:0 10px 30px rgba(0,0,0,.20); }
+        .hero, .card-match, .match-compact, .bet-card, .statement-card, .hero-card-box, .matches-filter, .payment-option, .modal-content { background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.045)) !important; border:1px solid rgba(255,255,255,.18) !important; box-shadow:0 14px 40px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10); backdrop-filter:blur(18px) saturate(145%); -webkit-backdrop-filter:blur(18px) saturate(145%); }
+        .hero { background:linear-gradient(135deg,rgba(7,24,48,.78),rgba(31,19,65,.62)) !important; border-radius:18px; }
+        .hero-card-box { background:rgba(255,255,255,.075) !important; }
+        .match-compact { background:linear-gradient(135deg,rgba(10,29,53,.72),rgba(21,39,67,.52)) !important; border-radius:14px; }
+        .matches-filter { color:#e8f1ff; background-color:rgba(255,255,255,.08) !important; }
+        .matches-filter option, .modal-content .form-select option { color:#172033; background:#fff; }
+        .match-id,.match-time,.match-count { color:#c8d8ee; }
+        .match-league { background:rgba(255,255,255,.10); color:#e8f1ff; border:1px solid rgba(255,255,255,.12); }
+        .match-status.open { background:rgba(34,197,94,.18); color:#86efac; border:1px solid rgba(34,197,94,.25); }
+        .match-status.closed { background:rgba(148,163,184,.15); color:#cbd5e1; border:1px solid rgba(148,163,184,.18); }
+        .team-btn.favored { background:linear-gradient(135deg,rgba(239,68,68,.88),rgba(185,28,28,.78)); color:#fff; border:1px solid rgba(255,255,255,.18); box-shadow:0 6px 18px rgba(239,68,68,.18); }
+        .team-btn.nonfavored { background:linear-gradient(135deg,rgba(37,99,235,.90),rgba(29,78,216,.78)); color:#fff; border:1px solid rgba(255,255,255,.18); box-shadow:0 6px 18px rgba(37,99,235,.18); }
+        .market-btn.over { background:linear-gradient(135deg,rgba(239,68,68,.88),rgba(185,28,28,.78)); color:#fff; border:1px solid rgba(255,255,255,.18); box-shadow:0 6px 18px rgba(239,68,68,.18); }
+        .market-btn.under { background:linear-gradient(135deg,rgba(37,99,235,.90),rgba(29,78,216,.78)); color:#fff; border:1px solid rgba(255,255,255,.18); box-shadow:0 6px 18px rgba(37,99,235,.18); }
+        .market-odds { background:rgba(255,255,255,.17); color:#fff; border:1px solid rgba(255,255,255,.14); }
+        .body-summary { background:rgba(239,68,68,.15); color:#fda4af; border:1px solid rgba(239,68,68,.22); }
+        .ou-summary { background:rgba(37,99,235,.15); color:#93c5fd; border:1px solid rgba(37,99,235,.22); }
+        .odds-summary b { color:#fff; }
+        .modal-content { color:#e8f1ff; }
+        .modal-content .form-control,.modal-content .form-select { background:rgba(255,255,255,.08); color:#fff; border-color:rgba(255,255,255,.16); }
+        .modal-content .form-control::placeholder { color:#a9b9cf; }
+        .hero-btn,.team-btn,.market-btn { transition:transform .16s ease,box-shadow .16s ease,filter .16s ease; }
+        .hero-btn:hover,.team-btn:hover,.market-btn:hover { transform:translateY(-2px); filter:brightness(1.06); }
+        @media (max-width:768px) { .hero{border-radius:14px;padding:14px;} .hero-card-box{padding:8px 10px;} .match-compact{border-radius:12px;} }
+
+    
+        .rules-card{background:rgba(15,23,42,.86);border:1px solid rgba(148,163,184,.18)!important;color:#e5edf8}
+        .rules-title{color:#f8fafc;letter-spacing:.01em}
+        .rules-card .text-white-50{color:#b8c5d8!important}
+        .rules-card #rulesContainer{color:#dbe7f5;line-height:1.75;font-size:.94rem}
+        .rules-card #rulesContainer>div{padding:.4rem .6rem;border-left:3px solid rgba(96,165,250,.55);background:rgba(255,255,255,.025);border-radius:0 8px 8px 0}
+        .tx-card{background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.10)!important;color:#e5edf8}
+        .tx-card .text-muted{color:#cbd5e1!important}.tx-card .text-secondary{color:#aebdce!important}
+        #betHistoryContainer .bet-card{transform:none}.bet-card .card-body{padding:.7rem  .8rem!important}.bet-card h5{font-size:1rem!important}.bet-card .stat-box{padding:6px 3px!important}
+        .tx-card .badge{font-weight:800;letter-spacing:.02em}
+
+        .hero-balance { flex:0 0 auto; min-width:0; text-align:right; padding-left:12px; }
+        .hero-balance-label { color:rgba(255,255,255,.78); font-size:9px; font-weight:800; letter-spacing:.1em; }
+        .hero-balance-value { color:#fff; font-size:19px; line-height:1.15; font-weight:900; font-variant-numeric:tabular-nums; text-shadow:0 2px 10px rgba(0,0,0,.25); white-space:nowrap; }
+        .team-stack { display:grid; grid-template-columns:1fr; gap:5px; margin-bottom:7px; }
+        .team-stack .team-btn { width:100%; text-align:left; min-height:31px; padding:7px 10px; }
+        .market-grid-both { margin-top:6px; }
+        .market-btn.both-over { background:linear-gradient(135deg,rgba(190,24,93,.91),rgba(159,18,57,.85)); color:#fff; border:1px solid rgba(255,255,255,.2); box-shadow:0 5px 16px rgba(190,24,93,.16); }
+        .market-btn.both-under { background:linear-gradient(135deg,rgba(14,116,144,.92),rgba(29,78,216,.84)); color:#fff; border:1px solid rgba(255,255,255,.2); box-shadow:0 5px 16px rgba(29,78,216,.16); }
+        .market-btn .both-label { font-size:10px; }
+        .modal-leg-preview { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:7px 9px; margin-top:6px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:#e8f1ff; font-size:11px; }
+        .modal-leg-preview strong { font-weight:800; }
+        .bet-final-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.12); }
+        .bet-final-row:last-child { border-bottom:0; }
+        .bet-final-muted { color:#9fb2ca; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+        .bet-final-value { color:#fff; font-size:13px; font-weight:800; overflow-wrap:anywhere; }
+        .bet-limit-details { border:1px solid rgba(255,255,255,.13); background:rgba(255,255,255,.06); border-radius:10px; padding:10px; }
+        @media (max-width:767.98px) {
+            .hero-top { flex-direction:row !important; align-items:center !important; justify-content:space-between !important; gap:8px !important; }
+            .hero-balance { padding-left:4px; }
+            .hero-balance-label { font-size:8px; }
+            .hero-balance-value { font-size:16px; }
+            .user-profile { gap:8px !important; }
+            .avatar { width:36px; height:36px; font-size:13px; }
+            .user-info h2 { max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        }
+        @media (max-width:380px) { .hero-balance-value { font-size:14px; } .hero-balance-label { letter-spacing:.05em; } .user-info .hello { font-size:8px; } }
+
+</style>
+
+    <style>
+        /* v33: two-side match row while retaining established market colors */
+        .team-stack { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; gap:6px !important; margin-bottom:7px; }
+        .team-stack .team-btn { width:100%; min-width:0; min-height:36px; padding:7px 6px; text-align:center; }
+        .match-compact .match-meta { gap:5px; }
+        .match-compact .match-meta-left { flex:1 1 auto; }
+        .match-compact .match-meta > .d-flex { flex:0 0 auto; }
+        .match-compact .match-league { max-width:45%; }
+        .match-compact .odds-summary { font-size:9px; }
+        .match-compact .odds-summary b { font-size:10px; }
+        @media(max-width:767.98px){ .team-stack .team-btn { font-size:10px !important; min-height:35px; } }
+        /* Keep My Bets and Results readable on the dark glass background. */
+        #betHistoryContainer, #resultsContainer { color:#fff !important; }
+        #betHistoryContainer .text-dark, #betHistoryContainer .text-muted, #betHistoryContainer .text-secondary,
+        #betHistoryContainer .text-body, #betHistoryContainer .text-primary, #betHistoryContainer .text-danger,
+        #betHistoryContainer .text-success, #betHistoryContainer .text-info, #betHistoryContainer .text-warning,
+        #resultsContainer .text-dark, #resultsContainer .text-muted, #resultsContainer .text-secondary,
+        #resultsContainer .text-body, #resultsContainer .text-primary, #resultsContainer .text-danger,
+        #resultsContainer .text-success, #resultsContainer .text-info, #resultsContainer .text-warning { color:#fff !important; }
+        #betHistoryContainer .bet-card, #resultsContainer .statement-card { color:#fff !important; }
+        #betHistoryContainer .bet-card h1, #betHistoryContainer .bet-card h2, #betHistoryContainer .bet-card h3,
+        #betHistoryContainer .bet-card h4, #betHistoryContainer .bet-card h5, #betHistoryContainer .bet-card h6,
+        #betHistoryContainer .bet-card p, #betHistoryContainer .bet-card small, #betHistoryContainer .bet-card label,
+        #betHistoryContainer .bet-card .text-dark, #betHistoryContainer .bet-card .text-muted,
+        #betHistoryContainer .bet-card .text-secondary, #betHistoryContainer .bet-card .text-body,
+        #betHistoryContainer .bet-card .text-primary, #betHistoryContainer .bet-card .text-danger,
+        #betHistoryContainer .bet-card .text-success, #betHistoryContainer .bet-card .text-info,
+        #betHistoryContainer .bet-card .text-warning,
+        #resultsContainer .statement-card h1, #resultsContainer .statement-card h2, #resultsContainer .statement-card h3,
+        #resultsContainer .statement-card h4, #resultsContainer .statement-card h5, #resultsContainer .statement-card h6,
+        #resultsContainer .statement-card p, #resultsContainer .statement-card small, #resultsContainer .statement-card label,
+        #resultsContainer .statement-card .text-dark, #resultsContainer .statement-card .text-muted,
+        #resultsContainer .statement-card .text-secondary, #resultsContainer .statement-card .text-body,
+        #resultsContainer .statement-card .text-primary, #resultsContainer .statement-card .text-danger,
+        #resultsContainer .statement-card .text-success, #resultsContainer .statement-card .text-info,
+        #resultsContainer .statement-card .text-warning { color:#fff !important; }
+        #betHistoryContainer .bet-card .badge, #resultsContainer .statement-card .badge { color:#fff; }
+        #betHistoryContainer .bet-card hr, #resultsContainer .statement-card hr { border-color:rgba(255,255,255,.18); }
+        #betHistoryContainer .stat-label { color:#e2e8f0 !important; }
+        #betHistoryContainer .stat-value { color:#fff !important; }
+    </style>
+
+
+    <style>
+        /* v34 Match Card layout: balanced home/body/away row with matching red/blue markets */
+        .match-card-v34 {
+            position:relative;
+            overflow:hidden;
+            padding:10px !important;
+            border:1px solid rgba(148,184,224,.22) !important;
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(37,99,235,.18), transparent 45%),
+                radial-gradient(ellipse at 100% 100%, rgba(20,184,166,.13), transparent 42%),
+                linear-gradient(145deg, rgba(14,31,55,.97), rgba(10,22,41,.96)) !important;
+            box-shadow:0 10px 26px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.055) !important;
+            border-radius:14px !important;
+        }
+        .match-card-v34::before {
+            content:""; position:absolute; inset:0 auto 0 0; width:3px;
+            background:linear-gradient(180deg,#ef4444 0%,#3b82f6 52%,#14b8a6 100%); opacity:.95;
+        }
+        .match-card-v34 > * { position:relative; z-index:1; }
+        .match-card-v34 .match-meta { align-items:center; margin-bottom:10px; gap:7px; }
+        .match-card-v34 .match-meta-left { gap:7px; }
+        .match-card-v34 .match-id { color:#f8fafc; font-size:11px; font-weight:900; letter-spacing:.02em; }
+        .match-card-v34 .match-league {
+            max-width:none; display:inline-flex; align-items:center; gap:2px;
+            padding:4px 7px; color:#dbeafe;
+            background:linear-gradient(135deg,rgba(96,165,250,.16),rgba(148,163,184,.08));
+            border:1px solid rgba(147,197,253,.24); letter-spacing:.035em; font-size:9.5px;
+        }
+        .match-card-v34 .match-league .bi { color:#fbbf24; font-size:9px; }
+        .match-meta-right { display:flex; align-items:center; justify-content:flex-end; gap:5px; flex:0 0 auto; }
+        .match-card-v34 .match-time { color:#bdcce0; font-size:9px; }
+        .match-card-v34 .match-status { font-size:8.5px; padding:4px 6px; }
+        .match-teams-odds-row {
+            display:grid; grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);
+            align-items:stretch; gap:5px; margin-bottom:8px;
+        }
+        .match-card-v34 .match-team-btn {
+            width:100%; min-width:0; min-height:43px; padding:6px 5px;
+            text-align:center; white-space:normal; overflow-wrap:anywhere;
+            line-height:1.15; font-size:10.5px; border-radius:9px;
+        }
+        .match-card-v34 .team-btn.favored { outline:1px solid rgba(248,113,113,.15); }
+        .match-card-v34 .team-btn.nonfavored { outline:1px solid rgba(96,165,250,.14); }
+        .body-odds-center {
+            display:flex; flex-direction:column; justify-content:center; align-items:center;
+            min-width:0; border-radius:9px; padding:4px 2px;
+            background:linear-gradient(180deg,rgba(239,68,68,.13),rgba(37,99,235,.13));
+            border:1px solid rgba(203,213,225,.16); color:#fff; text-align:center;
+        }
+        .body-odds-caption { font-size:7.5px; line-height:1.1; font-weight:900; letter-spacing:.08em; color:#b7c8df; }
+        .body-odds-center strong { font-size:11px; line-height:1.25; font-weight:900; overflow-wrap:anywhere; }
+        .match-gp-row, .match-both-row { gap:7px; }
+        .match-card-v34 .market-btn { min-height:37px; padding:6px 8px; border-radius:9px; }
+        .match-card-v34 .market-btn.over { background:linear-gradient(120deg,rgba(239,68,68,.96),rgba(185,28,28,.90)); }
+        .match-card-v34 .market-btn.under { background:linear-gradient(120deg,rgba(37,99,235,.96),rgba(29,78,216,.90)); }
+        .match-card-v34 .market-btn.both-over { background:linear-gradient(120deg,rgba(190,24,93,.96),rgba(159,18,57,.92)); }
+        .match-card-v34 .market-btn.both-under { background:linear-gradient(120deg,rgba(29,78,216,.96),rgba(14,116,144,.92)); }
+        .match-card-v34 .market-label, .match-card-v34 .both-label { font-size:10px; font-weight:850; }
+        .match-card-v34 .market-odds { min-width:0; max-width:54%; padding:3px 5px; font-size:9.5px; overflow:hidden; text-overflow:ellipsis; }
+        .match-kickoff {
+            display:flex; align-items:center; justify-content:center; gap:5px;
+            margin-top:8px; padding:6px 8px; border-radius:8px;
+            background:rgba(148,163,184,.075); border:1px solid rgba(148,163,184,.13);
+            color:#c5d4e7; font-size:9px;
+        }
+        .match-kickoff .bi { color:#7dd3fc; }
+        .match-kickoff strong { color:#f8fafc; font-size:10px; font-weight:900; font-variant-numeric:tabular-nums; }
+        .match-card-v34 .match-lock-note { color:#fca5a5; }
+        @media(max-width:575.98px) {
+            .match-card-v34 { padding:9px !important; }
+            .match-card-v34 .match-meta { gap:4px; }
+            .match-card-v34 .match-meta-left { gap:5px; }
+            .match-card-v34 .match-league { font-size:9px; padding:4px 5px; }
+            .match-meta-right { gap:4px; }
+            .match-card-v34 .match-time { font-size:8px; }
+            .match-card-v34 .match-status { font-size:8px; padding:4px 5px; }
+            .match-teams-odds-row { grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr); gap:4px; }
+            .match-card-v34 .match-team-btn { font-size:9.5px; min-height:42px; }
+            .body-odds-center strong { font-size:10px; }
+            .match-card-v34 .market-btn { padding:6px; }
+            .match-card-v34 .market-label, .match-card-v34 .both-label { font-size:9.5px; }
+            .match-card-v34 .market-odds { font-size:9px; padding:3px 4px; }
+        }
+        @media(max-width:380px) {
+            .match-card-v34 .match-time { display:none; }
+            .match-teams-odds-row { grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr); }
+            .match-card-v34 .match-team-btn { font-size:9px; padding:5px 3px; }
+        }
+    </style>
+
+
+    <style>
+        /* v35 Match card alignment and readable My Bets cards */
+        .match-card-v34 .match-meta-v35 { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(84px,auto) minmax(0,1fr); align-items:center; gap:5px; width:100%; }
+        .match-card-v34 .match-meta-left { justify-content:flex-start; min-width:0; }
+        .match-card-v34 .match-close-center { justify-self:center; text-align:center; min-width:0; }
+        .match-card-v34 .match-close-center .match-time { color:#f1f5f9; font-weight:800; white-space:nowrap; font-size:9px; }
+        .match-card-v34 .match-status-wrap { justify-self:end; min-width:0; }
+        .match-teams-v35 { display:grid; grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr); align-items:stretch; gap:5px; margin-bottom:8px; }
+        .match-card-v34 .match-teams-v35 .match-team-btn { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:3px; min-height:46px; padding:6px 5px; text-align:center; }
+        .team-inline-name { display:block; max-width:100%; overflow-wrap:anywhere; line-height:1.15; }
+        .team-inline-odds { display:block; font-size:9px; font-weight:900; opacity:.95; line-height:1.05; }
+        .match-vs-v35 { align-self:center; justify-self:center; color:#cbd5e1; font-size:9px; font-weight:900; letter-spacing:.05em; }
+        .match-card-v34 .match-gp-row, .match-card-v34 .match-both-row { margin-top:6px; }
+        .match-card-v34 .match-kickoff { margin-top:9px; text-align:center; }
+        .mybets-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 12px; margin:0 0 14px; padding:12px 14px; border-radius:13px; background:linear-gradient(135deg,rgba(15,35,61,.94),rgba(14,29,49,.92)); border:1px solid rgba(148,184,224,.2); box-shadow:0 8px 22px rgba(0,0,0,.14); }
+        .mybets-toolbar-title { color:#f8fafc; font-size:14px; font-weight:900; }
+        .mybets-date-label { color:#cbd5e1; font-size:10px; font-weight:800; text-align:right; }
+        .mybets-date-controls { display:flex; grid-column:2; align-items:center; gap:6px; }
+        #betHistoryDateFilter { width:150px; color:#f8fafc; color-scheme:dark; background:rgba(255,255,255,.08); border:1px solid rgba(148,163,184,.3); }
+        .mybets-clear-date { color:#dbeafe; border:1px solid rgba(148,163,184,.28); background:rgba(255,255,255,.06); white-space:nowrap; }
+        .mybets-clear-date:hover { color:#fff; background:rgba(255,255,255,.13); }
+        .mybet-card { height:100%; overflow:hidden; padding:12px; border-radius:14px; color:#f8fafc; background:radial-gradient(ellipse at 0% 0%,rgba(37,99,235,.13),transparent 46%),linear-gradient(145deg,rgba(16,34,58,.98),rgba(9,21,38,.98)); border:1px solid rgba(148,184,224,.22); box-shadow:0 9px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.04); }
+        .mybet-card-top { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center; padding-bottom:10px; border-bottom:1px solid rgba(148,163,184,.18); }
+        .mybet-id { color:#b7c8df; font-size:10px; white-space:nowrap; } .mybet-id strong { color:#fff; font-size:12px; }
+        .mybet-result-score { display:flex; justify-content:center; align-items:center; gap:5px; min-width:0; color:#9fb2ca; font-size:9px; }
+        .mybet-result-score strong { color:#fff; font-size:11px; white-space:nowrap; }
+        .mybet-status { padding:4px 7px; border-radius:6px; font-size:9px; font-weight:900; letter-spacing:.035em; white-space:nowrap; }
+        .mybet-status.win { color:#bbf7d0; background:rgba(22,163,74,.2); border:1px solid rgba(74,222,128,.24); }
+        .mybet-status.lose { color:#fecaca; background:rgba(220,38,38,.2); border:1px solid rgba(248,113,113,.24); }
+        .mybet-status.draw { color:#e2e8f0; background:rgba(148,163,184,.16); border:1px solid rgba(148,163,184,.22); }
+        .mybet-status.pending { color:#fde68a; background:rgba(217,119,6,.2); border:1px solid rgba(251,191,36,.25); }
+        .mybet-match-line,.mybet-choice-line { display:grid; grid-template-columns:52px minmax(0,1fr); align-items:start; gap:8px; padding:10px 0; }
+        .mybet-field-label { color:#9fb2ca; font-size:10px; font-weight:800; }
+        .mybet-match-name { display:flex; align-items:center; justify-content:center; gap:7px; text-align:center; font-size:11px; line-height:1.3; overflow-wrap:anywhere; }
+        .mybet-match-name strong { min-width:0; font-weight:800; } .mybet-vs { color:#93c5fd; font-size:9px; font-weight:900; flex:0 0 auto; }
+        .mybet-choice-line { padding-top:0; } .mybet-choice-value { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:11px; }
+        .mybet-choice-value > strong { padding:3px 6px; border-radius:5px; color:#fff; font-size:9px; }
+        .mybet-choice-value.body > strong { background:#b91c1c; } .mybet-choice-value.gp > strong { background:#1d4ed8; }
+        .mybet-choice-value > span { color:#f8fafc; font-weight:800; } .mybet-choice-value > em { color:#cbd5e1; font-size:10px; font-style:normal; }
+        .mybet-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding-top:10px; border-top:1px solid rgba(148,163,184,.18); }
+        .mybet-stat { display:flex; flex-direction:column; gap:4px; min-width:0; padding:8px 5px; text-align:center; border-radius:8px; background:rgba(255,255,255,.045); }
+        .mybet-stat > span { color:#b7c8df; font-size:9px; font-weight:700; } .mybet-stat > strong { color:#fff; font-size:12px; font-weight:900; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+        .mybet-stat > strong.positive { color:#86efac; } .mybet-stat > strong.negative { color:#fca5a5; } .mybet-stat > strong.neutral { color:#e2e8f0; }
+        .mybet-date { margin-top:9px; color:#9fb2ca; text-align:right; font-size:9px; }
+        @media(max-width:575.98px) {
+            .mybets-toolbar { grid-template-columns:1fr; gap:6px; padding:10px; }
+            .mybets-date-label { text-align:left; } .mybets-date-controls { grid-column:1; width:100%; }
+            #betHistoryDateFilter { flex:1; width:auto; min-width:0; }
+            .mybet-card { padding:10px; } .mybet-card-top { gap:5px; }
+            .mybet-result-score { gap:3px; } .mybet-result-score strong { font-size:10px; }
+            .mybet-status { font-size:8px; padding:4px 5px; }
+            .mybet-match-line,.mybet-choice-line { grid-template-columns:43px minmax(0,1fr); gap:5px; }
+            .mybet-match-name { gap:4px; font-size:10px; } .mybet-stat > strong { font-size:11px; }
+        }
+        @media(max-width:380px) {
+            .match-card-v34 .match-meta-v35 { grid-template-columns:minmax(0,1fr) minmax(76px,auto) minmax(0,1fr); gap:3px; }
+            .match-card-v34 .match-meta-left { gap:4px; } .match-card-v34 .match-id { font-size:10px; }
+            .match-card-v34 .match-league { font-size:8px; padding:3px 4px; }
+            .match-card-v34 .match-close-center .match-time { font-size:8px; }
+            .match-card-v34 .match-status { font-size:7.5px; padding:3px 4px; }
+        }
+    </style>
+
+
+    <style>
+        /* v36 My Bets: keep each card readable with stable two-column desktop layout */
+        #betHistoryContainer { align-items:stretch; }
+        #betHistoryContainer > [class*="col-"] { display:flex; flex-direction:column; }
+        #betHistoryContainer .mybet-card { width:100%; }
+        #betHistoryContainer .mybet-card-top { grid-template-columns:minmax(0,auto) minmax(0,1fr) minmax(0,auto); }
+        #betHistoryContainer .mybet-result-score { justify-self:center; }
+        #betHistoryContainer .mybet-match-name strong { color:#f8fafc; }
+        #betHistoryContainer .mybet-field-label { color:#c1d0e2; }
+        #betHistoryContainer .mybet-stat > span { color:#d0dbea; }
+        @media(min-width:1200px) {
+            #betHistoryContainer > .col-xl-5 { flex:0 0 50%; max-width:50%; }
+        }
+        @media(max-width:575.98px) {
+            #betHistoryContainer > [class*="col-"] { padding-left:6px; padding-right:6px; }
+            #betHistoryContainer .mybet-card-top { grid-template-columns:auto minmax(0,1fr) auto; }
+        }
+    </style>
+
+</head>
+<body class="auth-required">
+    <div id="loginGate">
+        <div class="gate-card card shadow-lg border-0">
+            <div class="card-body p-4 p-md-5 text-center">
+                <div class="display-6 text-warning mb-2"><i class="bi bi-shield-lock-fill"></i></div>
+                <h3 class="fw-bold mb-1">Bettor Login</h3>
+                <p class="text-muted mb-4">ပွဲစဉ်များကို ကြည့်ရှုရန် အရင် Login ဝင်ပါ။</p>
+                <form id="gateLoginForm">
+                    <input class="form-control form-control-lg mb-3" id="gateUsername" placeholder="Username" autocomplete="username" required>
+                    <input class="form-control form-control-lg mb-3" id="gatePassword" type="password" placeholder="Password" autocomplete="current-password" required>
+                    <button class="btn btn-warning btn-lg w-100 fw-bold" type="submit"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
+                    <div id="gateError" class="text-danger small mt-3"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- First-login / updated-rules confirmation. The Main Bettor Panel stays hidden until acceptance. -->
+    <div id="loginRulesGate" role="dialog" aria-modal="true" aria-labelledby="loginRulesTitle">
+        <div class="rules-gate-card">
+            <div class="px-4 py-3 d-flex align-items-center justify-content-between gap-3 border-bottom" style="border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.035)">
+                <div>
+                    <div class="small text-info fw-bold text-uppercase" style="letter-spacing:.12em">STT Betting</div>
+                    <h2 class="h5 fw-bold mb-0 mt-1" id="loginRulesTitle">Rules &amp; Regulations</h2>
+                </div>
+                <i class="bi bi-shield-check fs-3 text-info" aria-hidden="true"></i>
+            </div>
+            <div class="px-4 pt-3 small text-white-50">Please review the current rules before entering the Bettor Panel.</div>
+            <div id="loginRulesContent" class="rules-gate-body"><div>Loading current rules...</div></div>
+            <div class="p-4 pt-3 border-top" style="border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.025)">
+                <label class="d-flex align-items-start gap-2 small mb-3" for="loginRulesAgreeCheck" style="color:#f8fafc;cursor:pointer">
+                    <input type="checkbox" id="loginRulesAgreeCheck" class="form-check-input mt-1" style="flex:0 0 auto">
+                    <span>I have read and agree to the current Rules &amp; Regulations.</span>
+                </label>
+                <div id="loginRulesError" class="small text-warning mb-2" role="alert"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-light flex-fill" onclick="declineLoginRules()">Decline / Logout</button>
+                    <button type="button" id="acceptLoginRulesBtn" class="btn btn-success flex-fill fw-bold" onclick="acceptLoginRules()" disabled>I Agree &amp; Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark stt-navbar sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#" aria-label="STT Betting Home">
+                <span class="stt-brand-mark"><i class="bi bi-trophy-fill"></i></span>
+                <span class="stt-brand-name">STT Betting<span class="stt-brand-subtitle">FOOTBALL • LIVE ODDS</span></span>
+                <span class="badge bg-dark border border-secondary text-light ms-2 fs-7 fw-normal d-flex align-items-center gap-1">
+                    <span class="pulse-icon"></span> LIVE
+                </span>
+            </a>
+            <div class="navbar-account-tools">
+                <button id="btnLogout" class="btn header-logout d-none" type="button" onclick="logout()" title="Logout" aria-label="Logout">
+                    <i class="bi bi-box-arrow-right me-1"></i><span>Logout</span>
+                </button>
+                <div class="dropdown" id="accountDropdownWrap">
+                    <button class="btn account-toggle dropdown-toggle" id="accountDropdownButton" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                        <i class="bi bi-person-circle me-1"></i>Account
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end account-menu" aria-labelledby="accountDropdownButton">
+                        <li><span class="dropdown-item-text" id="accountMenuUsername">Account</span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#depositModal"><i class="bi bi-plus-circle me-2 text-success"></i>Deposit</button></li>
+                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#withdrawModal"><i class="bi bi-arrow-up-circle me-2 text-warning"></i>Withdraw</button></li>
+                        <li><button class="dropdown-item" type="button" onclick="openProfileModal()"><i class="bi bi-person-lines-fill me-2"></i>Profile</button></li>
+                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key me-2"></i>Change Password</button></li>
+                        <li><hr class="dropdown-divider"></li>
+                    </ul>
+                </div>
+                <button id="btnLoginModal" class="btn btn-outline-warning btn-sm d-none" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-box-arrow-in-right me-1"></i>Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- Compact Hero: preserve the existing STT theme and welcome identity -->
+        <section class="hero">
+            <div class="hero-top">
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">ST</div>
+                    <div class="user-info">
+                        <div class="hello">Welcome back</div>
+                        <h2 id="lblUsername">User</h2>
+                    </div>
+                </div>
+                <div class="hero-balance" aria-label="Available balance">
+                    <div class="hero-balance-label">AVAILABLE BALANCE</div>
+                    <div class="hero-balance-value"><span id="lblBalance">0</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Keep the two marquees independent from the compact hero -->
+        <div class="admin-banner" id="adminNoticeBanner" style="display:none;" aria-label="Admin announcement">
+            <span class="banner-icon">🚨</span>
+            <div class="banner-text"><span id="adminNoticeMarquee" class="banner-track"></span></div>
+        </div>
+        <div class="score-banner" id="finalScoreBanner" aria-label="Final match scores">
+            <span class="score-banner-icon"><i class="bi bi-trophy-fill"></i></span>
+            <span class="score-banner-label">FINAL SCORES</span>
+            <div class="score-banner-text"><div class="score-track" id="finalScoreMarquee"><span class="score-chip">No completed scores yet</span></div></div>
+        </div>
+
+        <!-- Main Navigation Tabs -->
+        <div class="bettor-tabs-wrap">
+            <div class="bettor-tabs" id="pills-tab" role="tablist">
+                <button class="bettor-tab active" id="pills-matches-tab" data-bs-toggle="pill" data-bs-target="#pills-matches" type="button" role="tab" onclick="loadMatches()">Matches</button>
+                <button class="bettor-tab" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" onclick="loadBetHistory()">My Bets</button>
+                <button class="bettor-tab" id="pills-results-tab" data-bs-toggle="pill" data-bs-target="#pills-results" type="button" role="tab" onclick="loadResults()">Results</button>
+                <button class="bettor-tab" id="pills-statement-tab" data-bs-toggle="pill" data-bs-target="#pills-statement" type="button" role="tab" onclick="loadTransactionStatement()">Transactions</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="pills-tabContent">
+            <!-- MATCHES TAB -->
+            <div class="tab-pane fade show active" id="pills-matches" role="tabpanel">
+                <div class="matches-toolbar">
+                    <select id="leagueFilter" class="form-select matches-filter" onchange="applyMatchFilters()">
+                        <option value="all">All Leagues</option>
+                    </select>
+                    <select id="timeFilter" class="form-select matches-filter" onchange="applyMatchFilters()">
+                        <option value="all">All Kickoff Times</option>
+                    </select>
+                </div>
+                <div id="matchCount" class="match-count"></div>
+                <div id="matchesContainer" class="row g-2">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">ပွဲစဉ်များ ရယူနေပါသည်...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS TAB -->
+            <div class="tab-pane fade" id="pills-results" role="tabpanel">
+                <div id="resultsContainer" class="row">
+                    <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Results loading...</p></div>
+                </div>
+            </div>
+
+            <!-- BET HISTORY TAB -->
+            <div class="tab-pane fade" id="pills-history" role="tabpanel">
+                <div class="mybets-toolbar">
+                    <div class="mybets-toolbar-title"><i class="bi bi-receipt-cutoff me-2"></i>My Bets</div>
+                    <label for="betHistoryDateFilter" class="mybets-date-label">Filter by date</label>
+                    <div class="mybets-date-controls">
+                        <input type="date" id="betHistoryDateFilter" class="form-control form-control-sm" aria-label="Filter My Bets by date" onchange="loadBetHistory()">
+                        <button type="button" class="btn btn-sm mybets-clear-date" onclick="clearBetHistoryDate()"><i class="bi bi-x-circle me-1"></i>All dates</button>
+                    </div>
+                </div>
+                <div id="betHistoryContainer" class="row">
+                    <div class="text-center py-5">
+                        <p class="text-muted">Please login to view your bets.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATEMENT TAB -->
+            <div class="tab-pane fade" id="pills-statement" role="tabpanel">
+                <div class="mybets-toolbar">
+                    <div class="mybets-toolbar-title"><i class="bi bi-arrow-left-right me-2"></i>Transactions</div>
+                    <label for="transactionDateFilter" class="mybets-date-label">Filter by date</label>
+                    <div class="mybets-date-controls">
+                        <input type="date" id="transactionDateFilter" class="form-control form-control-sm" aria-label="Filter transactions by date" onchange="loadTransactionStatement()">
+                        <button type="button" class="btn btn-sm mybets-clear-date" onclick="clearTransactionDate()"><i class="bi bi-x-circle me-1"></i>All dates</button>
+                    </div>
+                </div>
+                <div id="statementContainer" class="row">
+                    <div class="text-center py-5">
+                        <p class="text-muted">Please login to view transactions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE TAB -->
+            <div class="tab-pane fade d-none" id="pills-profile" role="tabpanel" aria-hidden="true">
+                <div id="profileContainer" class="profile-panel"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DEPOSIT MODAL -->
+    <div class="modal fade" id="depositModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">Deposit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="depositForm">
+                        <div class="mb-3">
+                            <label for="depAmount" class="form-label fw-bold">Amount</label>
+                            <input type="number" class="form-control form-control-lg" id="depAmount" min="1" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 fw-bold">Confirm</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WITHDRAW MODAL -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold">Withdraw</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="withdrawForm">
+                        <div class="mb-3">
+                            <label for="withAmount" class="form-label fw-bold">Amount</label>
+                            <input type="number" class="form-control form-control-lg" id="withAmount" min="1" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-bold">Confirm</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdrawal agent confirmation: the backend request and Admin alert happen only after this second confirmation -->
+    <div class="modal fade" id="withdrawConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-shield-check me-2"></i>Confirm Withdrawal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3"><i class="bi bi-chat-square-text" style="font-size:2rem;color:#fbbf24;"></i></div>
+                    <p class="mb-3 text-center" style="line-height:1.7;">Units ထုတ်ယူရန်အတွက် Agent ဆီသို့ Viber / TG (Telegram) သို့မဟုတ် ဖုန်းဖြင့် အတည်ပြုပေးပါရန်။</p>
+                    <div class="d-flex align-items-center justify-content-between gap-2 p-2 rounded" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);">
+                        <span class="small text-white-50">Withdrawal Amount</span>
+                        <strong id="confirmWithdrawAmount" class="text-warning">0 units</strong>
+                    </div>
+                    <p class="small text-white-50 mt-3 mb-0">Confirm ထပ်နှိပ်မှသာ Admin ထံ Withdrawal Request Alert ပို့ပါမည်။</p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-light" id="cancelWithdrawFinalBtn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning fw-bold" id="confirmWithdrawFinalBtn" onclick="confirmWithdrawalRequest()"><i class="bi bi-check2-circle me-1"></i>Confirm & Notify Admin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-key-fill me-2"></i>Change Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">လက်ရှိ Password</label>
+                            <input type="password" class="form-control" id="currentPassword" minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password အသစ်</label>
+                            <input type="password" class="form-control" id="newUserPassword" minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password အသစ် ပြန်ထည့်ပါ</label>
+                            <input type="password" class="form-control" id="confirmUserPassword" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-info text-white w-100 fw-bold">Password ပြောင်းမည်</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLACE BET MODAL -->
+    <div class="modal fade" id="placeBetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-ticket-detailed me-2"></i>Place Bet</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="betForm">
+                        <input type="hidden" id="modalMatchId">
+                        <input type="hidden" id="modalMatchName">
+                        <input type="hidden" id="modalBetType">
+                        <input type="hidden" id="modalChoice">
+                        <input type="hidden" id="modalOddsRate">
+
+                        <div class="card mb-3 bg-light border-0">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-dark" id="modalMatchTitle">-</h6>
+                                <div class="d-flex justify-content-between text-muted small mt-2">
+                                    <span>Market: <strong id="modalBetTypeLabel" class="text-primary">-</strong></span>
+                                    <span>Selection: <strong id="modalChoiceLabel" class="fw-bold">-</strong></span>
+                                </div>
+                                <div class="mt-1 small">Odds: <span id="modalOddsLabel" class="fw-bold text-dark">-</span></div>
+                                <div id="modalLegsPreview" class="d-none mt-2"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="betAmount" id="betAmountLabel" class="form-label fw-bold">Stake</label>
+                            <input type="number" class="form-control form-control-lg" id="betAmount" min="100" required>
+                            <div id="betAmountHint" class="small text-info mt-1 d-none">This stake applies separately to Body and GP. Both selections will be charged.</div>
+                            <div id="betTotalDeductionPreview" class="small fw-bold text-white-50 mt-2 d-none"></div>
+                            <div id="late-bet-cap-note" class="small text-danger fw-semibold mt-2 d-none"></div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECOND CONFIRM: deliberately limited to Selection, Odds, Amount and Confirm -->
+    <div class="modal fade" id="betFinalConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white py-3">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-check2-square me-2"></i>Confirm Bet</h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="cancelFinalBetConfirm()" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3"><div id="betFinalConfirmLines"></div></div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="cancelFinalBetConfirm()">Cancel</button>
+                    <button type="button" id="betFinalConfirmBtn" class="btn btn-success btn-sm fw-bold" onclick="confirmFinalBet()">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side-cap warning. Admin is notified only when the bettor explicitly requests a higher limit. -->
+    <div class="modal fade" id="betLimitModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark py-3">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-shield-exclamation me-2"></i>Bet Limit Reached</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="bet-limit-message" class="small mb-3">This side has reached its bet limit.</p>
+                    <div class="bet-limit-details small">
+                        <div class="d-flex justify-content-between gap-2"><span>Match</span><strong id="bet-limit-match">-</strong></div>
+                        <div class="d-flex justify-content-between gap-2 mt-2"><span>Market</span><strong id="bet-limit-market">-</strong></div>
+                        <div class="d-flex justify-content-between gap-2 mt-2"><span>Limit</span><strong id="bet-limit-cap">-</strong></div>
+                        <div class="d-flex justify-content-between gap-2 mt-2"><span>Used</span><strong id="bet-limit-used">-</strong></div>
+                        <div class="d-flex justify-content-between gap-2 mt-2"><span>Remaining</span><strong id="bet-limit-remaining">-</strong></div>
+                    </div>
+                    <p class="small mt-3 mb-0">To place more bets, contact Admin and request a higher limit.</p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="requestBetLimitBtn" class="btn btn-warning btn-sm text-dark fw-bold" onclick="requestBetLimitIncrease()">Request Limit Increase</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL: accessible from Account dropdown, not the main tabs -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white py-3">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body"><div id="profileModalContainer"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-lock-fill me-2"></i>Login</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" id="loginUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-bold">ဝင်ရောက်မည်</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & Custom JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const _nativeFetch = window.fetch.bind(window);
+        window.fetch = function(input, init = {}) {
+            const token = localStorage.getItem('authToken');
+            const url = typeof input === 'string' ? input : input.url;
+            if (token && String(url).startsWith('/api/')) {
+                init = { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` } };
+            }
+            return _nativeFetch(input, init).then(async res => {
+                if ((res.status === 401 || res.status === 403) && token && !String(url).includes('/api/login')) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    if (typeof showLoginGate === 'function') showLoginGate();
+                }
+                return res;
+            });
+        };
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+        let authToken = localStorage.getItem('authToken') || null;
+        let placeBetModalInstance = null;
+        let betFinalConfirmModalInstance = null;
+        let betLimitModalInstance = null;
+        let profileModalInstance = null;
+        let pendingBetPayload = null;
+        let pendingBetDeduction = 0;
+        let pendingBetLegs = [];
+        let lastBetLimitError = null;
+        let finalBetSubmitting = false;
+        let depositModalInstance = null;
+        let withdrawModalInstance = null;
+        let withdrawConfirmModalInstance = null;
+        let pendingWithdrawalAmount = null;
+        let withdrawalSubmitting = false;
+        let bettorRefreshTimer = null;
+
+        const adminPaymentAccounts = {
+            'KPay': { phone: '09791234567', name: 'KBZPay: Football Bet Admin' },
+            'AYA Pay': { phone: '09798765432', name: 'AYA Pay: Football Bet Admin' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            placeBetModalInstance = new bootstrap.Modal(document.getElementById('placeBetModal'));
+            betFinalConfirmModalInstance = new bootstrap.Modal(document.getElementById('betFinalConfirmModal'));
+            betLimitModalInstance = new bootstrap.Modal(document.getElementById('betLimitModal'));
+            profileModalInstance = new bootstrap.Modal(document.getElementById('profileModal'));
+            depositModalInstance = new bootstrap.Modal(document.getElementById('depositModal'));
+            withdrawModalInstance = new bootstrap.Modal(document.getElementById('withdrawModal'));
+            withdrawConfirmModalInstance = new bootstrap.Modal(document.getElementById('withdrawConfirmModal'));
+            document.getElementById('withdrawConfirmModal').addEventListener('hidden.bs.modal', () => {
+                if (pendingWithdrawalAmount !== null && !withdrawalSubmitting) {
+                    // Closing/cancelling the second dialog returns to the amount form, without sending an Admin alert.
+                    window.setTimeout(() => withdrawModalInstance.show(), 120);
+                }
+            });
+            document.getElementById('withdrawForm').addEventListener('submit', handleWithdrawSubmit);
+
+            updateUserUI();
+            syncServerTime();
+            setInterval(syncServerTime, 30000);
+            const rulesCheck = document.getElementById('loginRulesAgreeCheck');
+            if (rulesCheck) rulesCheck.addEventListener('change', () => {
+                const btn = document.getElementById('acceptLoginRulesBtn');
+                if (btn) btn.disabled = !rulesCheck.checked;
+            });
+
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('gateLoginForm').addEventListener('submit', handleGateLogin);
+            if (currentUser && authToken) {
+                fetch('/api/me').then(r => r.json().then(data => ({ok:r.ok, data}))).then(({ok, data}) => {
+                    if (!ok || !data.success || data.user.role !== 'user') throw new Error('session');
+                    currentUser = data.user;
+                    // Keep the existing valid token: /api/me returns user info, not a new token.
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    enterAuthenticatedView();
+                }).catch(() => showLoginGate());
+            } else {
+                showLoginGate();
+            }
+            document.getElementById('betForm').addEventListener('submit', handlePlaceBet);
+            document.getElementById('changePasswordForm').addEventListener('submit', handleChangePassword);
+            document.getElementById('depositForm').addEventListener('submit', handleDepositSubmit);
+            document.getElementById('betAmount').addEventListener('input', updateBetStakeSummary);
+        });
+
+        async function handleDepositSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const amount = Number(document.getElementById('depAmount').value);
+            if (!Number.isFinite(amount) || amount <= 0) { alert('Enter a valid amount.'); return; }
+            try {
+                const res = await fetch('/api/user/deposit', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                });
+                const result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.message || 'Deposit request failed');
+                alert('Deposit request submitted successfully.');
+                depositModalInstance.hide();
+                document.getElementById('depositForm').reset();
+                loadTransactionStatement(true);
+            } catch (err) { alert(err.message || 'Deposit request failed.'); }
+        }
+
+        async function handleWithdrawSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const amount = Number(document.getElementById('withAmount').value);
+            if (!Number.isFinite(amount) || amount <= 0) { alert('Enter a valid amount.'); return; }
+            if (amount > Number(currentUser.balance || 0)) { alert('Insufficient balance.'); return; }
+
+            // Step 1: validate the amount, then show the agent-contact confirmation.
+            // No API call or Admin notification is created at this stage.
+            pendingWithdrawalAmount = amount;
+            document.getElementById('confirmWithdrawAmount').textContent = amount.toLocaleString() + ' units';
+            const amountModalEl = document.getElementById('withdrawModal');
+            amountModalEl.addEventListener('hidden.bs.modal', function showAgentPrompt() {
+                amountModalEl.removeEventListener('hidden.bs.modal', showAgentPrompt);
+                if (pendingWithdrawalAmount !== null) withdrawConfirmModalInstance.show();
+            }, { once: true });
+            withdrawModalInstance.hide();
+        }
+
+        async function confirmWithdrawalRequest() {
+            if (!currentUser || pendingWithdrawalAmount === null || withdrawalSubmitting) return;
+            const amount = Number(pendingWithdrawalAmount);
+            if (!Number.isFinite(amount) || amount <= 0) return;
+            if (amount > Number(currentUser.balance || 0)) { alert('Insufficient balance. Please reopen the withdrawal form.'); return; }
+
+            const confirmBtn = document.getElementById('confirmWithdrawFinalBtn');
+            withdrawalSubmitting = true;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Submitting...';
+            try {
+                // Step 2: this is the only place that sends the request, so Admin alerts
+                // are created only after the user explicitly confirms the agent message.
+                const res = await fetch('/api/user/withdraw', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, agent_confirmation: true })
+                });
+                const result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.message || 'Withdraw request failed');
+
+                currentUser.balance = Math.max(0, Number(currentUser.balance || 0) - amount);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                pendingWithdrawalAmount = null;
+                withdrawConfirmModalInstance.hide();
+                document.getElementById('withdrawForm').reset();
+                updateUserUI();
+                loadTransactionStatement(true);
+                alert('Withdrawal request submitted. Please confirm with your agent via Viber, Telegram or phone.');
+            } catch (err) {
+                alert(err.message || 'Withdraw request failed.');
+            } finally {
+                withdrawalSubmitting = false;
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Confirm & Notify Admin';
+            }
+        }
+
+        function updateUserUI() {
+            if (currentUser) {
+                document.getElementById('btnLoginModal').classList.add('d-none');
+                document.getElementById('btnLogout').classList.remove('d-none');
+                const usernameEl = document.getElementById('lblUsername');
+                if (usernameEl) usernameEl.innerText = currentUser.username;
+                const balanceEl = document.getElementById('lblBalance');
+                if (balanceEl) balanceEl.innerText = Number(currentUser.balance || 0).toLocaleString();
+                const accountNameEl = document.getElementById('accountMenuUsername');
+                if (accountNameEl) accountNameEl.textContent = 'Signed in as ' + currentUser.username;
+                const accountWrap = document.getElementById('accountDropdownWrap');
+                if (accountWrap) accountWrap.classList.remove('d-none');
+                const nameParts = String(currentUser.username || 'ST').trim().split(/\s+/);
+                const initials = (nameParts[0] || 'ST').substring(0, 2).toUpperCase();
+                const avatarEl = document.getElementById('userAvatar');
+                if (avatarEl) avatarEl.innerText = initials;
+            } else {
+                document.getElementById('btnLoginModal').classList.remove('d-none');
+                const accountWrap = document.getElementById('accountDropdownWrap');
+                if (accountWrap) accountWrap.classList.add('d-none');
+                document.getElementById('btnLogout').classList.add('d-none');
+            }
+        }
+
+        function showLoginGate() {
+            document.body.classList.remove('rules-required');
+            const rulesGate = document.getElementById('loginRulesGate');
+            if (rulesGate) rulesGate.style.display = 'none';
+            document.body.classList.add('auth-required');
+            document.getElementById('loginGate').style.display = 'flex';
+        }
+
+        async function enterAuthenticatedView() {
+            if (!currentUser || !authToken) { showLoginGate(); return; }
+            try {
+                const response = await fetch('/api/user/rules-status', { cache:'no-store' });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'Unable to verify current rules.');
+                if (data.enabled && !data.accepted) {
+                    pendingLoginRulesVersion = String(data.version || '');
+                    const content = document.getElementById('loginRulesContent');
+                    const check = document.getElementById('loginRulesAgreeCheck');
+                    const btn = document.getElementById('acceptLoginRulesBtn');
+                    const error = document.getElementById('loginRulesError');
+                    if (content) content.innerHTML = String(data.rules || '').split(/\r?\n/).map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div>No rules have been configured.</div>';
+                    if (check) check.checked = false;
+                    if (btn) btn.disabled = true;
+                    if (error) error.textContent = '';
+                    document.body.classList.remove('auth-required');
+                    document.body.classList.add('rules-required');
+                    document.getElementById('loginGate').style.display = 'none';
+                    document.getElementById('loginRulesGate').style.display = 'flex';
+                    updateUserUI();
+                    return;
+                }
+            } catch (err) {
+                pendingLoginRulesVersion = '';
+                // If the session expired while checking rules, return to Login instead of leaving both gates visible.
+                if (!localStorage.getItem('authToken')) {
+                    currentUser = null; authToken = null;
+                    document.body.classList.remove('rules-required');
+                    showLoginGate();
+                    return;
+                }
+                document.body.classList.remove('auth-required');
+                document.body.classList.add('rules-required');
+                document.getElementById('loginGate').style.display = 'none';
+                document.getElementById('loginRulesGate').style.display = 'flex';
+                const content = document.getElementById('loginRulesContent');
+                if (content) content.innerHTML = '<div>Current rules could not be loaded. Please retry before entering the Bettor Panel.</div>';
+                const error = document.getElementById('loginRulesError');
+                if (error) error.textContent = err.message || 'Unable to verify the rules.';
+                const btn = document.getElementById('acceptLoginRulesBtn');
+                if (btn) { btn.disabled = false; btn.textContent = 'Retry'; btn.onclick = retryLoginRules; }
+                const check = document.getElementById('loginRulesAgreeCheck');
+                if (check) check.closest('label').style.display = 'none';
+                return;
+            }
+            finishAuthenticatedView();
+        }
+
+        let pendingLoginRulesVersion = '';
+        async function retryLoginRules() {
+            const btn = document.getElementById('acceptLoginRulesBtn');
+            if (btn) { btn.textContent = 'I Agree & Continue'; btn.onclick = acceptLoginRules; btn.disabled = true; }
+            const check = document.getElementById('loginRulesAgreeCheck');
+            if (check) { check.closest('label').style.display = ''; check.checked = false; }
+            await enterAuthenticatedView();
+        }
+
+        async function acceptLoginRules() {
+            const check = document.getElementById('loginRulesAgreeCheck');
+            const btn = document.getElementById('acceptLoginRulesBtn');
+            const error = document.getElementById('loginRulesError');
+            if (!pendingLoginRulesVersion || !check?.checked || !btn || btn.textContent === 'Retry') return;
+            btn.disabled = true; btn.textContent = 'Saving...';
+            if (error) error.textContent = '';
+            try {
+                const response = await fetch('/api/user/accept-rules', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({version:pendingLoginRulesVersion})
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) {
+                    if (data.code === 'RULES_UPDATED') {
+                        await enterAuthenticatedView();
+                        return;
+                    }
+                    throw new Error(data.message || 'Could not save rules acceptance.');
+                }
+                pendingLoginRulesVersion = '';
+                finishAuthenticatedView();
+            } catch (err) {
+                if (error) error.textContent = err.message || 'Could not save rules acceptance.';
+                btn.disabled = false; btn.textContent = 'I Agree & Continue';
+            }
+        }
+
+        function declineLoginRules() { logout(); }
+
+        function finishAuthenticatedView() {
+            document.body.classList.remove('auth-required', 'rules-required');
+            document.getElementById('loginGate').style.display = 'none';
+            document.getElementById('loginRulesGate').style.display = 'none';
+            updateUserUI();
+            loadMatches();
+            loadBetHistory(true);
+            loadTransactionStatement(true);
+            loadRules(true);
+            loadAdminNotice();
+            loadResults(true);
+            startAutoRefresh();
+        }
+
+        function startAutoRefresh() {
+            if (bettorRefreshTimer) return;
+            // Keep match odds/status in sync quickly across devices without requiring manual refresh.
+            // The API response is fetched with cache:'no-store' in loadMatches().
+            bettorRefreshTimer = window.setInterval(() => {
+                if (!currentUser || document.body.classList.contains('rules-required')) return;
+                if (document.visibilityState === 'hidden') return;
+                loadMatches(true);
+            }, 3000);
+
+            // Notices change much less frequently than odds; keep their existing lightweight cadence.
+            if (!window.__sttNoticeRefreshTimer) {
+                window.__sttNoticeRefreshTimer = window.setInterval(() => {
+                    if (currentUser && document.body.classList.contains('rules-required') === false &&
+                        document.visibilityState !== 'hidden') loadAdminNotice();
+                }, 30000);
+            }
+
+            // Re-sync as soon as the user returns to this tab.
+            if (!window.__sttMatchesVisibilityHandler) {
+                window.__sttMatchesVisibilityHandler = true;
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && currentUser &&
+                        !document.body.classList.contains('rules-required')) loadMatches(true);
+                });
+            }
+        }
+
+        async function performLogin(username, password) {
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            return await res.json();
+        }
+
+        async function handleGateLogin(e) {
+            e.preventDefault();
+            const err = document.getElementById('gateError');
+            err.textContent = '';
+            try {
+                const data = await performLogin(document.getElementById('gateUsername').value.trim(), document.getElementById('gatePassword').value);
+                if (!data.success) { err.textContent = data.message || 'Invalid username or password.'; return; }
+                currentUser = data.user;
+                authToken = data.token;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('authToken', authToken);
+                enterAuthenticatedView();
+            } catch (e) { err.textContent = 'Could not connect to the server. Please try again.'; }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const data = await performLogin(username, password);
+                if (data.success) {
+                    currentUser = data.user;
+                    authToken = data.token;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('authToken', authToken);
+                    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                    enterAuthenticatedView();
+                } else {
+                    alert(data.message || 'Login မှားယွင်းနေပါသည်။');
+                }
+            } catch (err) {
+                alert('Server ချိတ်ဆက်မှု အဆင်မပြေပါ။');
+            }
+        }
+
+        async function logout() {
+            try { await fetch('/api/logout', { method: 'POST' }); } catch (_) {}
+            currentUser = null;
+            authToken = null;
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            updateUserUI();
+            document.body.classList.remove('rules-required');
+            document.getElementById('loginRulesGate').style.display = 'none';
+            document.getElementById('acceptLoginRulesBtn').textContent = 'I Agree & Continue';
+            document.getElementById('acceptLoginRulesBtn').onclick = acceptLoginRules;
+            document.getElementById('loginRulesAgreeCheck').closest('label').style.display = '';
+            showLoginGate();
+            document.getElementById('betHistoryContainer').innerHTML = `
+                <div class="text-center py-5"><p class="text-muted">Please login to view your bets.</p></div>`;
+            document.getElementById('statementContainer').innerHTML = `
+                <div class="text-center py-5"><p class="text-muted">Please login to view transactions.</p></div>`;
+        }
+
+        const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
+        const DEFAULT_BET_LOCK_MINUTES = 15;
+        let serverClockOffsetMs = 0;
+        let serverClockSyncedAt = 0;
+        function nowMs(){ return Date.now() + serverClockOffsetMs; }
+
+        async function syncServerTime(){
+            try {
+                const t0 = Date.now();
+                const r = await fetch('/api/time', {cache:'no-store'});
+                const d = await r.json();
+                const t1 = Date.now();
+                if (d && d.success && Number.isFinite(Number(d.server_now_ms))) {
+                    serverClockOffsetMs = Number(d.server_now_ms) - Math.round((t0+t1)/2);
+                    serverClockSyncedAt = t1;
+                }
+            } catch(e) {}
+        }
+
+        function parseMyanmarTime(timeStr) {
+            if (!timeStr) return 0;
+            let raw = String(timeStr).trim().replace(' ', 'T');
+            if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(raw)) {
+                const t = new Date(raw).getTime();
+                return Number.isNaN(t) ? 0 : t;
+            }
+            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (!m) {
+                const t = new Date(raw).getTime();
+                return Number.isNaN(t) ? 0 : t;
+            }
+            const [, y, mo, d, h, mi, sec='00'] = m;
+            return Date.UTC(+y, +mo-1, +d, +h, +mi, +sec) - MYANMAR_OFFSET_MS;
+        }
+
+        function formatDbUtcTime(timeStr) {
+            if (!timeStr) return '-';
+            const raw = String(timeStr).trim().replace(' ', 'T') + 'Z';
+            const ms = Date.parse(raw);
+            if (Number.isNaN(ms)) return timeStr;
+            return new Intl.DateTimeFormat('en-US', { timeZone:'Asia/Yangon', month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true }).format(new Date(ms)) + ' (GMT+6:30)';
+        }
+
+        function format12HourTime(timeStr) {
+            const ms = parseMyanmarTime(timeStr);
+            if (!ms) return timeStr || '-';
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Yangon', month: 'short', day: 'numeric',
+                year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+            }).format(new Date(ms));
+        }
+
+        // Format the exact betting closing time using the match's effective lock setting.
+        // Kickoff values stored as Myanmar-local timestamps are parsed explicitly above.
+        function formatClosingTime(timeStr, lockMinutes = DEFAULT_BET_LOCK_MINUTES) {
+            const lockAtMs = getBetLockAt(timeStr, lockMinutes);
+            if (!lockAtMs || !Number.isFinite(lockAtMs)) return '-';
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Yangon',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }).format(new Date(lockAtMs));
+        }
+
+        function getMatchLockMinutes(match) {
+            const n = String(match?.lock_mode || 'global').toLowerCase() === 'override' ? Number(match?.lock_minutes) : Number(match?.global_lock_minutes ?? match?.betting_lock_minutes);
+            return [2, 5, 10, 15].includes(n) ? n : DEFAULT_BET_LOCK_MINUTES;
+        }
+
+        function getBetLockAt(timeStr, lockMinutes = DEFAULT_BET_LOCK_MINUTES) {
+            const kickoff = parseMyanmarTime(timeStr);
+            const mins = Number(lockMinutes);
+            return kickoff ? kickoff - ([2,5,10,15].includes(mins) ? mins : DEFAULT_BET_LOCK_MINUTES) * 60 * 1000 : 0;
+        }
+
+        function isBettingLocked(timeStr, lockMinutes = DEFAULT_BET_LOCK_MINUTES) {
+            const lockAt = getBetLockAt(timeStr, lockMinutes);
+            return lockAt > 0 && nowMs() >= lockAt;
+        }
+
+        function isKickoffPassed(timeStr) {
+            const kickoff = parseMyanmarTime(timeStr);
+            return kickoff > 0 && nowMs() >= kickoff;
+        }
+
+        function minutesToKickoff(timeStr) {
+            const ms = parseMyanmarTime(timeStr);
+            if (!ms) return null;
+            return Math.ceil((ms - nowMs()) / 60000);
+        }
+
+
+        function populateTimeFilter(matchesList) {
+            const select = document.getElementById('timeFilter');
+            if (!select) return;
+            const current = select.value || 'all';
+            const entries = [];
+            const seen = new Set();
+            for (const m of matchesList || []) {
+                const ms = parseMyanmarTime(m.match_time);
+                if (!ms || seen.has(ms)) continue;
+                seen.add(ms);
+                entries.push({ ms, label: new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Yangon',hour:'2-digit',minute:'2-digit',hour12:true}).format(new Date(ms)) });
+            }
+            entries.sort((a,b)=>a.ms-b.ms);
+            select.innerHTML = '<option value="all">All Kickoff Times</option>' + entries.map(x=>`<option value="${x.ms}">${x.label}</option>`).join('');
+            if (entries.some(x=>String(x.ms)===current)) select.value=current;
+        }
+
+        function populateLeagueFilter(matchesList) {
+            const select = document.getElementById('leagueFilter');
+            if (!select) return;
+            const current = select.value || 'all';
+            const leagues = [...new Set(matchesList.map(m => String(m.league || 'LEAGUE').trim()).filter(Boolean))]
+                .sort((a,b) => a.localeCompare(b));
+            select.innerHTML = '<option value="all">All Leagues</option>' +
+                leagues.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+            if (leagues.includes(current)) select.value = current;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+        }
+
+        function timeFilterMatch(match, filter) {
+            if (filter === 'all') return true;
+            const ms = parseMyanmarTime(match.match_time);
+            return !!ms && String(ms) === String(filter);
+        }
+
+        function applyMatchFilters() {
+            const all = window.__allMatches || [];
+            const league = document.getElementById('leagueFilter')?.value || 'all';
+            const time = document.getElementById('timeFilter')?.value || 'all';
+            const filtered = all.filter(m => {
+                if (isKickoffPassed(m.match_time)) return false;
+                const l = String(m.league || 'LEAGUE').trim();
+                return (league === 'all' || l === league) && timeFilterMatch(m, time);
+            });
+            renderMatches(filtered);
+        }
+
+        function shortLeagueName(value) {
+            const raw = String(value || '').trim();
+            const key = raw.toLowerCase().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
+            const aliases = {
+                'english premier league':'EPL', 'premier league':'EPL', 'epl':'EPL',
+                'english football league championship':'EFL CH', 'championship':'EFL CH',
+                'la liga':'LA LIGA', 'laliga':'LA LIGA', 'spanish la liga':'LA LIGA',
+                'serie a':'SERIE A', 'italian serie a':'SERIE A',
+                'bundesliga':'BUNDESLIGA', 'german bundesliga':'BUNDESLIGA',
+                'ligue 1':'LIGUE 1', 'french ligue 1':'LIGUE 1',
+                'uefa champions league':'UCL', 'champions league':'UCL', 'ucl':'UCL',
+                'uefa europa league':'UEL', 'europa league':'UEL', 'uel':'UEL',
+                'uefa conference league':'UECL', 'conference league':'UECL',
+                'myanmar national league':'MNL', 'myanmar league':'MNL', 'mnl':'MNL',
+                'thai league 1':'THAI 1', 'j league':'J1', 'j1 league':'J1',
+                'k league 1':'K1', 'saudi pro league':'SPL',
+                'major league soccer':'MLS', 'mls':'MLS',
+                'fa cup':'FA CUP', 'carabao cup':'EFL CUP',
+                'friendly':'FRIENDLY', 'international friendly':'INTL FRIENDLY'
+            };
+            return aliases[key] || (raw.length > 18 ? raw.slice(0, 16).trimEnd() + '…' : (raw || 'LEAGUE'));
+        }
+
+        function renderMatches(matchesList) {
+            const container = document.getElementById('matchesContainer');
+            const countEl = document.getElementById('matchCount');
+            if (countEl) countEl.textContent = `${matchesList.length} match${matchesList.length === 1 ? '' : 'es'}`;
+            if (!matchesList.length) {
+                container.innerHTML = `<div class="text-center py-5 text-muted">ရွေးထားသော filter အတိုင်း ပွဲစဉ်မရှိပါ။</div>`;
+                return;
+            }
+            container.innerHTML = matchesList.map(m => {
+                const teams = (m.match_name || '').split(/\s+vs\s+/i);
+                const actualHomeTeam = teams[0] ? teams[0].trim() : 'Home';
+                const actualAwayTeam = teams[1] ? teams[1].trim() : 'Away';
+                const favoredSide = String(m.body_favored_side || 'home').toLowerCase() === 'away' ? 'away' : 'home';
+                const favoredTeam = favoredSide === 'away' ? actualAwayTeam : actualHomeTeam;
+                const kickoffMs = parseMyanmarTime(m.match_time);
+                const expired = kickoffMs > 0 && nowMs() >= kickoffMs;
+                const lockMinutes = getMatchLockMinutes(m);
+                const lockedByTime = m.betting_open === false || isBettingLocked(m.match_time, lockMinutes);
+                const isClosed = (m.status !== 'Open') || expired || lockedByTime;
+                const mins = minutesToKickoff(m.match_time);
+                let statusText = 'Open';
+                if (expired) statusText = 'Time Over';
+                else if (m.status !== 'Open') statusText = m.status || 'Closed';
+                else if (lockedByTime) statusText = 'Betting Closed';
+                const statusClass = isClosed ? 'closed' : 'open';
+                const lockInfo = !expired && mins !== null && mins <= lockMinutes
+                    ? `Starts in ${Math.max(mins, 0)} min · ${lockMinutes} min lock` : '';
+                const disabledClass = isClosed ? 'compact-disabled' : '';
+                const matchId = String(m.custom_match_id || m.id);
+                const matchName = String(m.match_name || '');
+                const bodyOdds = String(m.body_odds || '0=');
+                const goalOdds = String(m.goal_odds || '0=');
+                const leagueFull = String(m.league || 'LEAGUE').trim();
+                const leagueShort = shortLeagueName(leagueFull);
+                const clickHome = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(actualHomeTeam)}, ${JSON.stringify(bodyOdds)})'`;
+                const clickAway = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Body", ${JSON.stringify(actualAwayTeam)}, ${JSON.stringify(bodyOdds)})'`;
+                const clickOver = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Goal", "Over", ${JSON.stringify(goalOdds)})'`;
+                const clickUnder = isClosed ? '' : `onclick='openBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, "Goal", "Under", ${JSON.stringify(goalOdds)})'`;
+                const clickBothOver = isClosed ? '' : `onclick='openBothBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)}, ${JSON.stringify(goalOdds)}, "Over")'`;
+                const clickBothUnder = isClosed ? '' : `onclick='openBothBetModal(${JSON.stringify(matchId)}, ${JSON.stringify(matchName)}, ${JSON.stringify(favoredTeam)}, ${JSON.stringify(bodyOdds)}, ${JSON.stringify(goalOdds)}, "Under")'`;
+                const homeClass = favoredSide === 'home' ? 'favored' : 'nonfavored';
+                const awayClass = favoredSide === 'away' ? 'favored' : 'nonfavored';
+                const homeOdds = favoredSide === 'home' ? `<span class="team-inline-odds">(${escapeHtml(bodyOdds)})</span>` : '';
+                const awayOdds = favoredSide === 'away' ? `<span class="team-inline-odds">(${escapeHtml(bodyOdds)})</span>` : '';
+                return `
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="match-compact match-card-v34 h-100">
+                            <div class="match-meta match-meta-v35">
+                                <div class="match-meta-left">
+                                    <span class="match-id">${escapeHtml(matchId)}</span>
+                                    <span class="match-league" title="${escapeHtml(leagueFull)}"><i class="bi bi-trophy-fill me-1"></i>${escapeHtml(leagueShort)}</span>
+                                </div>
+                                <div class="match-close-center"><span class="match-time">Close ${formatClosingTime(m.match_time, lockMinutes)}</span></div>
+                                <div class="match-status-wrap"><span class="match-status ${statusClass}">${escapeHtml(statusText)}</span></div>
+                            </div>
+                            <div class="match-teams-v35">
+                                <button type="button" class="team-btn ${homeClass} match-team-btn" ${clickHome} title="Home: ${escapeHtml(actualHomeTeam)}"><span class="team-inline-name">${escapeHtml(actualHomeTeam)}</span>${homeOdds}</button>
+                                <span class="match-vs-v35">VS</span>
+                                <button type="button" class="team-btn ${awayClass} match-team-btn" ${clickAway} title="Away: ${escapeHtml(actualAwayTeam)}"><span class="team-inline-name">${escapeHtml(actualAwayTeam)}</span>${awayOdds}</button>
+                            </div>
+                            <div class="market-grid match-gp-row">
+                                <button type="button" class="market-btn over ${disabledClass}" ${clickOver}><span class="market-label">Over</span><span class="market-odds">${escapeHtml(goalOdds)}</span></button>
+                                <button type="button" class="market-btn under ${disabledClass}" ${clickUnder}><span class="market-label">Under</span><span class="market-odds">${escapeHtml(goalOdds)}</span></button>
+                            </div>
+                            <div class="market-grid market-grid-both match-both-row">
+                                <button type="button" class="market-btn both-over ${disabledClass}" ${clickBothOver}><span class="both-label">Both Over</span><span class="market-odds">2 Bets</span></button>
+                                <button type="button" class="market-btn both-under ${disabledClass}" ${clickBothUnder}><span class="both-label">Both Under</span><span class="market-odds">2 Bets</span></button>
+                            </div>
+                            <div class="match-kickoff"><i class="bi bi-clock-history me-1"></i><span>Kickoff</span><strong>${format12HourTime(m.match_time)}</strong></div>
+                            ${lockInfo ? `<div class="match-lock-note"><i class="bi bi-lock-fill me-1"></i>${escapeHtml(lockInfo)}</div>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function loadMatches(isSilent = false) {
+            const container = document.getElementById('matchesContainer');
+            try {
+                const res = await fetch('/api/matches', { cache: 'no-store' });
+                const result = await res.json();
+                const matchesList = Array.isArray(result) ? result : (result.data || []);
+                if (!Array.isArray(result) && Number.isFinite(Number(result.server_now_ms))) serverClockOffsetMs = Number(result.server_now_ms) - Date.now();
+                window.__allMatches = matchesList;
+                loadFinalScores(matchesList);
+                window.__matchesById = {};
+                matchesList.forEach(m => {
+                    window.__matchesById[String(m.id)] = m;
+                    if (m.custom_match_id !== undefined) window.__matchesById[String(m.custom_match_id)] = m;
+                });
+                populateLeagueFilter(matchesList);
+                populateTimeFilter(matchesList);
+                applyMatchFilters();
+                if (matchesList.length === 0 && !isSilent) {
+                    container.innerHTML = `<div class="text-center py-5 text-muted">ဖွင့်ထားသော ပွဲစဉ်များ မရှိသေးပါ။</div>`;
+                }
+            } catch (err) {
+                console.error('Matches load/render error:', err);
+                if (!isSilent) container.innerHTML = `<div class="text-center py-5 text-danger">Could not load matches. Please refresh the page. If the problem continues, check the server logs.</div>`;
+            }
+        }
+
+        function canOpenBetModal(matchId) {
+            const cachedMatch = window.__matchesById ? window.__matchesById[String(matchId)] : null;
+            if (cachedMatch && (cachedMatch.betting_open === false || isBettingLocked(cachedMatch.match_time, getMatchLockMinutes(cachedMatch)))) {
+                alert(`Betting closes ${getMatchLockMinutes(cachedMatch)} minutes before kickoff.`);
+                return false;
+            }
+            if (!currentUser) {
+                alert('Please login before placing a bet.');
+                new bootstrap.Modal(document.getElementById('loginModal')).show();
+                return false;
+            }
+            return true;
+        }
+
+        function renderModalLegPreview(legs) {
+            const box = document.getElementById('modalLegsPreview');
+            if (!box) return;
+            if (!Array.isArray(legs) || legs.length < 2) {
+                box.classList.add('d-none');
+                box.innerHTML = '';
+                return;
+            }
+            box.classList.remove('d-none');
+            box.innerHTML = legs.map(leg => `
+                <div class="modal-leg-preview">
+                    <div><span class="text-white-50 me-1">${/body/i.test(leg.bet_type) ? 'Body' : 'GP'}</span><strong>${escapeHtml(leg.choice)}</strong></div>
+                    <div class="text-end"><div class="text-white-50" style="font-size:9px">Odds</div><strong>${escapeHtml(leg.odds_rate)}</strong></div>
+                </div>`).join('');
+        }
+
+        function openBetModal(matchId, matchName, betType, choice, oddsRate) {
+            if (!canOpenBetModal(matchId)) return false;
+            const cachedMatch = window.__matchesById ? window.__matchesById[String(matchId)] : null;
+            const bodyOdds = cachedMatch ? String(cachedMatch.body_odds || oddsRate || '') : String(oddsRate || '');
+            const goalOdds = cachedMatch ? String(cachedMatch.goal_odds || oddsRate || '') : String(oddsRate || '');
+            const isBody = /body|ဘော်ဒီ/i.test(String(betType));
+            window.__pendingBetLegs = [{
+                match_id:String(matchId), match_name:String(matchName),
+                bet_type:String(betType), choice:String(choice), odds_rate:String(oddsRate)
+            }];
+
+            document.getElementById('modalMatchId').value = matchId;
+            document.getElementById('modalMatchName').value = matchName;
+            document.getElementById('modalBetType').value = betType;
+            document.getElementById('modalChoice').value = choice;
+            document.getElementById('modalOddsRate').value = oddsRate;
+            document.getElementById('modalMatchTitle').innerText = matchName;
+            document.getElementById('modalBetTypeLabel').innerText = betType;
+            const choiceLabel = document.getElementById('modalChoiceLabel');
+            choiceLabel.innerText = choice;
+            if (/over/i.test(choice)) choiceLabel.className = 'fw-bold text-danger';
+            else if (/under/i.test(choice)) choiceLabel.className = 'fw-bold text-primary';
+            else if (cachedMatch) {
+                const teams = String(cachedMatch.match_name || '').split(/\s+vs\s+/i).map(x => x.trim());
+                const favored = String(cachedMatch.body_favored_side || 'home').toLowerCase() === 'away' ? (teams[1] || '') : (teams[0] || '');
+                choiceLabel.className = choice === favored ? 'fw-bold text-danger' : 'fw-bold text-primary';
+            } else choiceLabel.className = 'fw-bold text-primary';
+            document.getElementById('modalOddsLabel').innerText = oddsRate;
+            renderModalLegPreview(window.__pendingBetLegs);
+            document.getElementById('betAmountLabel').textContent = 'Stake';
+            document.getElementById('betAmountHint').classList.add('d-none');
+            document.getElementById('betTotalDeductionPreview').classList.add('d-none');
+            document.getElementById('betTotalDeductionPreview').textContent = '';
+
+            const amountInput = document.getElementById('betAmount');
+            const capNote = document.getElementById('late-bet-cap-note');
+            amountInput.value = '';
+            amountInput.removeAttribute('max');
+            capNote.classList.add('d-none');
+            capNote.textContent = '';
+            const lockMinutes = getMatchLockMinutes(cachedMatch || {});
+            const lateEnabled = String(cachedMatch?.late_bet_cap_enabled || '0') === '1';
+            const lateWindow = Number(cachedMatch?.late_bet_cap_window_minutes || 0);
+            const lateAmount = Number(cachedMatch?.late_bet_cap_amount || 0);
+            const kickoffMs = cachedMatch ? parseMyanmarTime(cachedMatch.match_time) : 0;
+            const now = nowMs();
+            const hardLockAt = kickoffMs - lockMinutes*60*1000;
+            const lateCapAt = kickoffMs - lateWindow*60*1000;
+            if (lateEnabled && lateWindow > 0 && lateAmount > 0 && now >= lateCapAt && now < hardLockAt) {
+                amountInput.max = String(lateAmount);
+                capNote.textContent = `Final 5-minute limit: maximum stake ${lateAmount.toLocaleString()}.`;
+                capNote.classList.remove('d-none');
+            }
+            placeBetModalInstance.show();
+            return true;
+        }
+
+        function openBothBetModal(matchId, matchName, favoredTeam, bodyOdds, goalOdds, goalChoice) {
+            // Reuse the established slip, then add a second independent stake at the same amount.
+            if (!openBetModal(matchId, matchName, 'Body', favoredTeam, bodyOdds)) return;
+            window.__pendingBetLegs = [
+                { match_id:String(matchId), match_name:String(matchName), bet_type:'Body', choice:String(favoredTeam), odds_rate:String(bodyOdds) },
+                { match_id:String(matchId), match_name:String(matchName), bet_type:'Goal', choice:String(goalChoice), odds_rate:String(goalOdds) }
+            ];
+            document.getElementById('modalBetType').value = `Both ${goalChoice}`;
+            document.getElementById('modalChoice').value = `Both ${goalChoice}`;
+            document.getElementById('modalOddsRate').value = '';
+            document.getElementById('modalBetTypeLabel').innerText = 'Both · 2 selections';
+            const choiceLabel = document.getElementById('modalChoiceLabel');
+            choiceLabel.innerText = `${favoredTeam} + ${goalChoice}`;
+            choiceLabel.className = 'fw-bold text-white';
+            document.getElementById('modalOddsLabel').innerText = `Body ${bodyOdds} · GP ${goalOdds}`;
+            document.getElementById('betAmountLabel').textContent = 'Stake per selection';
+            document.getElementById('betAmountHint').classList.remove('d-none');
+            updateBetStakeSummary();
+            renderModalLegPreview(window.__pendingBetLegs);
+        }
+
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newUserPassword').value;
+            const confirmPassword = document.getElementById('confirmUserPassword').value;
+
+            if (newPassword.length < 6) return alert('Password အသစ်သည် အနည်းဆုံး 6 လုံးရှိရပါမည်။');
+            if (newPassword !== confirmPassword) return alert('Password အသစ်နှစ်ခု မတူပါ။');
+
+            try {
+                const res = await fetch('/api/user/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (!res.ok || !result.success) {
+                    return alert(result.message || 'Password ပြောင်း၍မရပါ။');
+                }
+
+                alert('Password ပြောင်းပြီးပါပြီ။ Login ပြန်ဝင်ပါ။');
+                document.getElementById('changePasswordForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'))?.hide();
+                await logout();
+            } catch (err) {
+                console.error('Change password error:', err);
+                alert('Server အမှားအယွင်း ရှိနေပါသည်။');
+            }
+        }
+
+        function updateBetStakeSummary() {
+            const box = document.getElementById('betTotalDeductionPreview');
+            const amount = Number(document.getElementById('betAmount')?.value || 0);
+            const legs = Array.isArray(window.__pendingBetLegs) ? window.__pendingBetLegs.length : 0;
+            if (!box) return;
+            if (legs > 1 && amount > 0) {
+                box.textContent = `Stake each: ${amount.toLocaleString()} · Total wallet deduction: ${(amount * legs).toLocaleString()}`;
+                box.classList.remove('d-none');
+            } else {
+                box.textContent = '';
+                box.classList.add('d-none');
+            }
+        }
+
+        async function handlePlaceBet(e) {
+            e.preventDefault();
+            const amount = Number(document.getElementById('betAmount').value);
+            if (!Number.isFinite(amount) || amount <= 0) return alert('Enter a valid stake.');
+            const legsTemplate = Array.isArray(window.__pendingBetLegs) ? window.__pendingBetLegs : [];
+            if (!legsTemplate.length) return alert('No selection in this bet slip.');
+            pendingBetLegs = legsTemplate.map(leg => ({ ...leg, amount }));
+            pendingBetDeduction = pendingBetLegs.reduce((sum,leg) => sum + Number(leg.amount || 0), 0);
+            if (pendingBetDeduction > Number(currentUser?.balance || 0)) return alert('Insufficient balance. This slip requires ' + pendingBetDeduction.toLocaleString() + '.');
+
+            const selectedMatch = window.__matchesById ? window.__matchesById[String(pendingBetLegs[0].match_id)] : null;
+            if (selectedMatch) {
+                const lockMinutes = getMatchLockMinutes(selectedMatch);
+                const lateEnabled = String(selectedMatch.late_bet_cap_enabled || '0') === '1';
+                const lateWindow = Number(selectedMatch.late_bet_cap_window_minutes || 0);
+                const lateAmount = Number(selectedMatch.late_bet_cap_amount || 0);
+                const kickoffMs = parseMyanmarTime(selectedMatch.match_time);
+                const n = nowMs();
+                if (lateEnabled && lateWindow > 0 && lateAmount > 0 && n >= kickoffMs - lateWindow*60000 && n < kickoffMs - lockMinutes*60000 && pendingBetLegs.some(leg => Number(leg.amount) > lateAmount)) {
+                    alert(`Final 5-minute limit: each stake must not exceed ${lateAmount.toLocaleString()}.`);
+                    return;
+                }
+            }
+
+            pendingBetPayload = { bets:pendingBetLegs, is_parlay:false, total_amount:pendingBetDeduction };
+            document.getElementById('betFinalConfirmLines').innerHTML = pendingBetLegs.map(leg => `
+                <div class="bet-final-row">
+                    <div><div class="bet-final-muted">Selection</div><div class="bet-final-value">${escapeHtml(leg.choice)}</div></div>
+                    <div><div class="bet-final-muted">Odds</div><div class="bet-final-value">${escapeHtml(leg.odds_rate)}</div></div>
+                    <div class="text-end"><div class="bet-final-muted">Amt</div><div class="bet-final-value">${Number(leg.amount).toLocaleString()}</div></div>
+                </div>`).join('');
+            finalBetSubmitting = false;
+            document.getElementById('betFinalConfirmBtn').disabled = false;
+            placeBetModalInstance.hide();
+            window.setTimeout(() => betFinalConfirmModalInstance.show(), 350);
+        }
+
+        function cancelFinalBetConfirm() {
+            if (finalBetSubmitting) return;
+            betFinalConfirmModalInstance.hide();
+            window.setTimeout(() => placeBetModalInstance.show(), 350);
+        }
+
+        function showBetLimitModal(details) {
+            lastBetLimitError = details || null;
+            document.getElementById('bet-limit-message').textContent = details?.message || 'This side has reached its configured bet limit.';
+            document.getElementById('bet-limit-match').textContent = `${details?.match_id || '-'} · ${details?.match_name || ''}`;
+            document.getElementById('bet-limit-market').textContent = `${details?.limit_label || 'Bet'} · ${details?.choice || ''}`;
+            document.getElementById('bet-limit-cap').textContent = Number(details?.limit || 0).toLocaleString();
+            document.getElementById('bet-limit-used').textContent = Number(details?.used || 0).toLocaleString();
+            document.getElementById('bet-limit-remaining').textContent = Number(details?.remaining || 0).toLocaleString();
+            const btn = document.getElementById('requestBetLimitBtn');
+            btn.disabled = false; btn.textContent = 'Request Limit Increase';
+            betLimitModalInstance.show();
+        }
+
+        async function requestBetLimitIncrease() {
+            if (!lastBetLimitError) return;
+            const btn = document.getElementById('requestBetLimitBtn');
+            btn.disabled = true; btn.textContent = 'Sending...';
+            try {
+                const r = await fetch('/api/user/bet-limit-request', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                        match_id:lastBetLimitError.match_id, limit_type:lastBetLimitError.limit_type,
+                        limit:lastBetLimitError.limit, used:lastBetLimitError.used, requested:lastBetLimitError.requested,
+                        bet_type:lastBetLimitError.bet_type, choice:lastBetLimitError.choice
+                    })
+                });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok || !data.success) throw new Error(data.message || 'Could not send request.');
+                betLimitModalInstance.hide();
+                alert(data.message || 'Request sent to Admin. Please wait for approval.');
+                lastBetLimitError = null;
+            } catch (err) {
+                alert(err.message || 'Could not send request.');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Request Limit Increase';
+            }
+        }
+
+        async function confirmFinalBet() {
+            if (!pendingBetPayload || finalBetSubmitting) return;
+            const btn = document.getElementById('betFinalConfirmBtn');
+            finalBetSubmitting = true;
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Confirming';
+            try {
+                const res = await fetch('/api/user/place-bet', {
+                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(pendingBetPayload)
+                });
+                const result = await res.json().catch(() => ({}));
+                if (result.success) {
+                    currentUser.balance = Math.max(0, Number(currentUser.balance || 0) - Number(result.total_deduction ?? pendingBetDeduction));
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    updateUserUI();
+                    betFinalConfirmModalInstance.hide();
+                    placeBetModalInstance.hide();
+                    pendingBetPayload = null; pendingBetLegs = []; pendingBetDeduction = 0;
+                    loadBetHistory(true); loadTransactionStatement(true);
+                    alert('Bet placed successfully.');
+                    return;
+                }
+                if (result.code === 'BET_LIMIT_REACHED') {
+                    betFinalConfirmModalInstance.hide();
+                    window.setTimeout(() => showBetLimitModal(result), 350);
+                    return;
+                }
+                if (result.code === 'ODDS_CHANGED') {
+                    betFinalConfirmModalInstance.hide();
+                    pendingBetPayload = null; pendingBetLegs = []; pendingBetDeduction = 0;
+                    window.setTimeout(() => { alert(result.message || 'Odds changed. Select the market again to reload the current odds.'); loadMatches(true); }, 350);
+                    return;
+                }
+                alert(result.message || 'Unable to place bet.');
+            } catch (err) {
+                alert(err.message || 'Server connection error.');
+            } finally {
+                finalBetSubmitting = false;
+                btn.disabled = false; btn.textContent = 'Confirm';
+            }
+        }
+
+        function getBetSummary(bet) {
+            const amount = Number(bet.amount) || 0;
+            const status = bet.status || 'Pending';
+
+            if (status === 'Pending') {
+                return {
+                    statusBadge: `<span class="badge bg-warning text-dark px-3 py-1 fw-bold"><i class="bi bi-hourglass-split"></i> PENDING</span>`,
+                    returnAmount: 0,
+                    netProfitOrLoss: 0,
+                    profitFormatted: `-`
+                };
+            }
+
+            let winFactor = 0;
+            if (status === 'Won') winFactor = 1.0;
+            else if (status === 'Half Won') winFactor = 0.5;
+            else if (status === 'Draw') winFactor = 0.0;
+            else if (status === 'Half Lost') winFactor = -0.5;
+            else if (status === 'Lost') winFactor = -1.0;
+
+            let returnAmount = Number.isFinite(Number(bet.payout)) && Number(bet.payout) > 0 ? Number(bet.payout) : 0;
+            if (!returnAmount) {
+                if (winFactor > 0) {
+                    const grossProfit = amount * winFactor;
+                    const commission = grossProfit * 0.05;
+                    returnAmount = amount + Math.floor(grossProfit - commission);
+                } else if (winFactor === 0) {
+                    returnAmount = amount;
+                } else {
+                    returnAmount = Math.floor(amount * (1 + winFactor));
+                }
+            }
+
+            const netProfitOrLoss = Number.isFinite(Number(bet.net_profit)) && Number(bet.net_profit) !== 0
+                ? Number(bet.net_profit)
+                : returnAmount - amount;
+
+            let badgeClass = 'bg-danger';
+            let profitFormatted = `${netProfitOrLoss.toLocaleString()}`;
+
+            if (netProfitOrLoss > 0) {
+                badgeClass = 'bg-success';
+                profitFormatted = `+${netProfitOrLoss.toLocaleString()}`;
+            } else if (netProfitOrLoss === 0) {
+                badgeClass = 'bg-secondary';
+                profitFormatted = `0`;
+            }
+
+            return {
+                statusBadge: `<span class="badge ${badgeClass} px-3 py-1 fw-bold">${status.toUpperCase()}</span>`,
+                returnAmount,
+                netProfitOrLoss,
+                profitFormatted
+            };
+        }
+
+        async function loadResults(isSilent = false) {
+            const container = document.getElementById('resultsContainer');
+            if (!container) return;
+            try {
+                const res = await fetch('/api/matches', { cache: 'no-store' });
+                const raw = await res.json();
+                const matches = Array.isArray(raw) ? raw : (raw?.data || []);
+                const resultMatches = matches.sort((a,b) => (parseMyanmarTime(b.match_time) || 0) - (parseMyanmarTime(a.match_time) || 0));
+
+                if (!resultMatches.length) {
+                    if (!isSilent) container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-trophy fs-1 d-block mb-2"></i>No matches yet.</div>`;
+                    return;
+                }
+                container.innerHTML = resultMatches.map(m => `
+                    <div class="col-12 col-lg-8 mx-auto mb-2">
+                        <div class="card statement-card shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small text-muted fw-semibold">Match #${m.custom_match_id || m.id}</span>
+                                    <span class="badge bg-dark">${m.home_score !== null && m.home_score !== undefined && m.away_score !== null && m.away_score !== undefined ? "FINAL" : "PENDING"}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="fw-bold text-dark flex-grow-1">${m.match_name || 'Match'}</div>
+                                    <div class="fs-5 fw-bold text-primary">${m.home_score !== null && m.home_score !== undefined && m.away_score !== null && m.away_score !== undefined ? `${m.home_score} - ${m.away_score}` : "-"}</div>
+                                </div>
+                                <div class="small text-muted mt-2">${format12HourTime(m.match_time)}</div>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            } catch (err) {
+                console.error('Results load error:', err);
+                if (!isSilent) container.innerHTML = `<div class="text-center py-5 text-danger">Results ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
+            }
+        }
+
+        async function loadRules(isSilent = false) {
+            const container = document.getElementById('rulesContainer');
+            if (!container) return;
+            try {
+                const res = await fetch('/api/rules', { cache: 'no-store' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Rules load failed');
+                const text = String(data.rules || '').trim();
+                if (data.enabled === false || !text) {
+                    container.innerHTML = '<div class="py-4 text-center text-muted">Rules are currently unavailable.</div>';
+                    return;
+                }
+                container.innerHTML = text.split(/\r?\n/).map(line => `<div class="mb-2">${escapeHtml(line || '')}</div>`).join('');
+            } catch (err) {
+                console.error('Rules load error:', err);
+                if (!isSilent) container.innerHTML = '<div class="py-4 text-center text-danger">Unable to load rules.</div>';
+            }
+        }
+
+        function loadProfile() {
+            if (!currentUser) return;
+            const html = `
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="avatar" style="width:44px;height:44px;flex:0 0 44px;">${escapeHtml((currentUser.username || 'U').slice(0,2).toUpperCase())}</div>
+                            <div><div class="small text-muted">ACCOUNT</div><div class="fw-bold">${escapeHtml(currentUser.username)}</div></div>
+                        </div>
+                        <div class="profile-item"><span class="profile-label">Username</span><span class="profile-value">${escapeHtml(currentUser.username)}</span></div>
+                        <div class="profile-item"><span class="profile-label">Balance</span><span class="profile-value text-success">${Number(currentUser.balance || 0).toLocaleString()}</span></div>
+                        <div class="profile-item"><span class="profile-label">Account Status</span><span class="badge bg-success">${escapeHtml(currentUser.status || 'Active')}</span></div>
+                        <button class="btn btn-dark w-100 fw-bold mt-3" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key me-1"></i> Change Password</button>
+                    </div>
+                </div>`;
+            const pane = document.getElementById('profileContainer');
+            const modal = document.getElementById('profileModalContainer');
+            if (pane) pane.innerHTML = html;
+            if (modal) modal.innerHTML = html;
+        }
+
+        function openProfileModal() {
+            if (!currentUser) { alert('Please login first.'); return; }
+            loadProfile();
+            profileModalInstance.show();
+        }
+
+        function clearBetHistoryDate() {
+            const dateInput = document.getElementById('betHistoryDateFilter');
+            if (dateInput) dateInput.value = '';
+            loadBetHistory();
+        }
+
+        function getBetHistoryDateKey(bet) {
+            const raw = bet.created_at || bet.placed_at || bet.bet_date || bet.date || bet.timestamp || '';
+            if (!raw) return '';
+            const text = String(raw);
+            const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (match) return match[1];
+            const parsed = new Date(raw);
+            if (Number.isNaN(parsed.getTime())) return '';
+            return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+        }
+
+        async function loadBetHistory(isSilent = false) {
+            const container = document.getElementById('betHistoryContainer');
+            if (!container) return;
+            if (!currentUser) {
+                if (!isSilent) container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-person-lock fs-1 d-block mb-2 text-secondary"></i>Please login to view your bets.</div>`;
+                return;
+            }
+            try {
+                let betsRes = await fetch(`/api/user/bets?username=${encodeURIComponent(currentUser.username)}`);
+                if (!betsRes.ok) betsRes = await fetch(`/api/bets?username=${encodeURIComponent(currentUser.username)}`);
+                const matchesRes = await fetch('/api/matches');
+                const betsRaw = await betsRes.json().catch(() => null);
+                const matchesRaw = await matchesRes.json().catch(() => null);
+                const betsArray = Array.isArray(betsRaw) ? betsRaw : (betsRaw?.data || betsRaw?.bets || []);
+                const userBets = betsArray.filter(b => b.username === currentUser.username || !b.username);
+                const dateInput = document.getElementById('betHistoryDateFilter');
+                const selectedDate = dateInput ? dateInput.value : '';
+                const filteredBets = selectedDate ? userBets.filter(b => getBetHistoryDateKey(b) === selectedDate) : userBets;
+                const matchesArray = Array.isArray(matchesRaw) ? matchesRaw : (matchesRaw?.data || []);
+                const matchMap = {};
+                matchesArray.forEach(m => {
+                    if (m.id !== undefined) matchMap[String(m.id)] = m;
+                    if (m.custom_match_id !== undefined) matchMap[String(m.custom_match_id)] = m;
+                });
+                if (filteredBets.length === 0) {
+                    const message = selectedDate ? `No bets found for ${escapeHtml(selectedDate)}.` : 'သင် No bets yet.';
+                    if (!isSilent || selectedDate) container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>${message}</div>`;
+                    return;
+                }
+                const cardsHtml = filteredBets.map((bet, idx) => {
+                    const summary = getBetSummary(bet);
+                    const matchInfo = matchMap[String(bet.match_id)];
+                    const matchText = String(bet.match_name || matchInfo?.match_name || 'Match');
+                    const teamParts = matchText.split(/\s+vs\s+/i);
+                    const homeTeam = teamParts[0] ? teamParts[0].trim() : matchText;
+                    const awayTeam = teamParts[1] ? teamParts[1].trim() : '';
+                    const scoreText = matchInfo && matchInfo.home_score !== null && matchInfo.home_score !== undefined && matchInfo.away_score !== null && matchInfo.away_score !== undefined ? `${matchInfo.home_score} - ${matchInfo.away_score}` : 'Pending';
+                    const isPending = String(bet.status || 'Pending').toLowerCase() === 'pending';
+                    const resultClass = isPending ? 'pending' : (summary.netProfitOrLoss > 0 ? 'win' : (summary.netProfitOrLoss < 0 ? 'lose' : 'draw'));
+                    const resultLabel = isPending ? 'PENDING' : (summary.netProfitOrLoss > 0 ? 'WIN' : (summary.netProfitOrLoss < 0 ? 'LOSE' : String(bet.status || 'DRAW').toUpperCase()));
+                    const type = String(bet.bet_type || 'Body');
+                    const choice = String(bet.choice || '-');
+                    const choiceKey = choice.trim().toLowerCase();
+                    const bodyChoice = ['home', 'home team'].includes(choiceKey) ? homeTeam
+                        : (['away', 'away team'].includes(choiceKey) ? (awayTeam || choice) : choice);
+                    const displayChoice = type.toLowerCase() === 'body' ? bodyChoice : choice;
+                    const odds = String(bet.odds_rate || '-');
+                    const dateKey = getBetHistoryDateKey(bet);
+                    const betId = bet.id || (idx + 1);
+                    const stake = Number(bet.amount || 0);
+                    const payout = Number(summary.returnAmount || 0);
+                    const net = Number(summary.netProfitOrLoss || 0);
+                    const netClass = net > 0 ? 'positive' : (net < 0 ? 'negative' : 'neutral');
+                    return `
+                        <div class="col-12 col-sm-6 col-xl-5 mx-auto mb-3">
+                            <article class="mybet-card">
+                                <div class="mybet-card-top">
+                                    <span class="mybet-id">ID <strong>${escapeHtml(betId)}</strong></span>
+                                    <span class="mybet-result-score"><span>Result</span><strong>${escapeHtml(scoreText)}</strong></span>
+                                    <span class="mybet-status ${resultClass}">${escapeHtml(resultLabel)}</span>
+                                </div>
+                                <div class="mybet-match-line">
+                                    <span class="mybet-field-label">Match</span>
+                                    <span class="mybet-match-name"><strong>${escapeHtml(homeTeam)}</strong><span class="mybet-vs">VS</span><strong>${escapeHtml(awayTeam || '—')}</strong></span>
+                                </div>
+                                <div class="mybet-choice-line">
+                                    <span class="mybet-field-label">Choice</span>
+                                    <span class="mybet-choice-value ${type.toLowerCase() === 'goal' || choice.toLowerCase().includes('over') || choice.toLowerCase().includes('under') ? 'gp' : 'body'}">
+                                        <strong>${escapeHtml(type === 'Goal' ? 'GP' : type)}</strong><span>${escapeHtml(displayChoice)}</span><em>Odds ${escapeHtml(odds)}</em>
+                                    </span>
+                                </div>
+                                <div class="mybet-stats">
+                                    <div class="mybet-stat"><span>Stake</span><strong>${stake.toLocaleString()}</strong></div>
+                                    <div class="mybet-stat"><span>Payout</span><strong>${payout.toLocaleString()}</strong></div>
+                                    <div class="mybet-stat"><span>Net P/L</span><strong class="${netClass}">${net > 0 ? '+' : ''}${net.toLocaleString()}</strong></div>
+                                </div>
+                                ${dateKey ? `<div class="mybet-date"><i class="bi bi-calendar3 me-1"></i>${escapeHtml(dateKey)}</div>` : ''}
+                            </article>
+                        </div>`;
+                }).join('');
+                container.innerHTML = cardsHtml;
+            } catch (err) {
+                console.error('Bet history load error:', err);
+                if (!isSilent) container.innerHTML = `<div class="col-12 text-center py-5 text-danger">စာရင်းများ ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
+            }
+        }
+
+        function getTransactionDateKey(tx) {
+            const raw = tx && (tx.created_at || tx.date || tx.timestamp) || '';
+            if (!raw) return '';
+            const text = String(raw).trim();
+            let ms = NaN;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+                ms = Date.parse(text + 'T00:00:00Z');
+            } else if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?$/.test(text)) {
+                ms = Date.parse(text.replace(' ', 'T') + 'Z');
+            } else {
+                ms = Date.parse(text);
+            }
+            if (Number.isNaN(ms)) {
+                const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+                return match ? match[1] : '';
+            }
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Yangon', year: 'numeric', month: '2-digit', day: '2-digit'
+            }).formatToParts(new Date(ms));
+            const part = type => (parts.find(p => p.type === type) || {}).value || '';
+            return part('year') + '-' + part('month') + '-' + part('day');
+        }
+
+        function clearTransactionDate() {
+            const input = document.getElementById('transactionDateFilter');
+            if (input) input.value = '';
+            loadTransactionStatement();
+        }
+
+        async function loadTransactionStatement(isSilent = false) {
+            const container = document.getElementById('statementContainer');
+            if (!container) return;
+            if (!currentUser) {
+                if (!isSilent) container.innerHTML = `<div class="text-center py-5 text-muted">Please login to view transactions.</div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/user/transactions?username=${encodeURIComponent(currentUser.username)}`);
+                const result = await res.json().catch(() => null);
+                let txArray = Array.isArray(result) ? result : (result?.data || []);
+                // Bettor Transactions intentionally shows only Deposit and Withdraw records.
+                txArray = txArray.filter(tx => ['deposit', 'withdraw'].includes(String(tx.type || 'Deposit').toLowerCase()));
+                const selectedDate = document.getElementById('transactionDateFilter')?.value || '';
+                if (selectedDate) txArray = txArray.filter(tx => getTransactionDateKey(tx) === selectedDate);
+
+                if (txArray.length === 0) {
+                    if (!isSilent) {
+                        container.innerHTML = `
+                            <div class="col-12 col-lg-8 mx-auto text-center py-5 text-muted">
+                                <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>
+                                No deposit or withdrawal transactions found for this date.
+                            </div>`;
+                    }
+                    return;
+                }
+
+                const txListHtml = txArray.map(tx => {
+                    const status = tx.status || 'Pending';
+                    const type = String(tx.type || 'Deposit');
+                    const amount = Number(tx.amount) || 0;
+                    const isDeposit = type.toLowerCase() === 'deposit';
+                    const typeBadge = isDeposit
+                        ? `<span class="badge bg-success"><i class="bi bi-arrow-down-circle me-1"></i>Deposit</span>`
+                        : `<span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-circle me-1"></i>Withdraw</span>`;
+                    const amountSign = isDeposit ? '+' : '-';
+                    const amountClass = isDeposit ? 'text-success' : 'text-danger';
+
+                    let statusBadge = `<span class="badge bg-warning text-dark">PENDING</span>`;
+                    if (['Approved', 'Completed', 'Success'].includes(status)) {
+                        statusBadge = `<span class="badge bg-success">SUCCESS</span>`;
+                    } else if (['Rejected', 'Failed'].includes(status)) {
+                        statusBadge = `<span class="badge bg-danger">REJECTED</span>`;
+                    }
+
+                    return `
+                        <div class="card statement-card tx-card mb-2 shadow-sm">
+                            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        ${typeBadge}
+                                        <small class="text-muted">${escapeHtml(tx.payment_method || 'System')} ${tx.transaction_id ? '(' + escapeHtml(tx.transaction_id) + ')' : ''}</small>
+                                    </div>
+                                    <div class="small text-secondary">
+                                        <i class="bi bi-clock me-1"></i>${formatDbUtcTime(tx.created_at || tx.date)}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold fs-6 ${amountClass}">${amountSign}${amount.toLocaleString()}</div>
+                                    <div>${statusBadge}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+
+                container.innerHTML = `<div class="col-12 col-lg-8 mx-auto">${txListHtml}</div>`;
+            } catch (err) {
+                console.error('Transaction statement error:', err);
+                if (!isSilent) container.innerHTML = `<div class="text-center py-5 text-danger">ငွေသွင်း/ငွေထုတ်မှတ်တမ်း ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။</div>`;
+            }
+        }
+
+        async function loadFinalScores() {
+            const ticker = document.getElementById('finalScoreMarquee');
+            if (!ticker) return;
+            try {
+                const response = await fetch('/api/final-scores', { cache:'no-store' });
+                const data = await response.json();
+                const finals = Array.isArray(data.data) ? data.data : [];
+                if (!response.ok || !data.success || !finals.length) {
+                    ticker.innerHTML = '<span class="score-chip">No published final scores yet</span>';
+                    ticker.style.animationDuration = '0s'; ticker.style.paddingLeft = '0';
+                    return;
+                }
+                ticker.style.animationDuration = Math.max(22, finals.length * 3.6) + 's';
+                ticker.style.paddingLeft = '100%';
+                ticker.innerHTML = finals.map(m => {
+                    const teams = String(m.match_name || 'Match').split(/\s+vs\s+/i);
+                    const home = teams[0] ? teams[0].trim() : 'Home';
+                    const away = teams[1] ? teams[1].trim() : 'Away';
+                    const matchId = m.custom_match_id || m.id || '';
+                    return `<span class="score-chip"><span class="score-id">#${escapeHtml(matchId)}</span><span class="score-teams">${escapeHtml(home)}</span><span class="score-number">${escapeHtml(m.home_score)} - ${escapeHtml(m.away_score)}</span><span class="score-teams">${escapeHtml(away)}</span><span class="score-ft">FT</span></span>`;
+                }).join('');
+            } catch (err) {
+                ticker.innerHTML = '<span class="score-chip">Final scores temporarily unavailable</span>';
+                ticker.style.animationDuration = '0s'; ticker.style.paddingLeft = '0';
+            }
+        }
+
+        async function loadAdminNotice() {
+            try {
+                const res = await fetch('/api/notice', { cache: 'no-store' });
+                const data = await res.json();
+                const banner = document.getElementById('adminNoticeBanner');
+                const marquee = document.getElementById('adminNoticeMarquee');
+                if (!banner || !marquee) return;
+                const notice = String(data.notice || '').trim();
+                if (data.enabled !== false && notice) {
+                    marquee.textContent = 'Admin Notice: ' + notice;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (e) { console.warn('Notice load failed', e); }
+        }
+        loadAdminNotice();
+        setInterval(loadAdminNotice, 30000);
+    </script>
+</body>
+</html>
