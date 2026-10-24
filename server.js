@@ -756,8 +756,10 @@ app.post('/api/admin/matches/:id/score-preview', requireAdmin, (req, res) => {
                 const pending = (bets || []).filter(b => String(b.status || 'Pending').toLowerCase() === 'pending');
                 const singles = pending.filter(b => !b.parlay_group_id);
                 const markets = { home:0, away:0, over:0, under:0 };
+                const market_bets = { home:[], away:[], over:[], under:[] };
                 const markers = {};
                 let projectedAdminPL = 0, stakeTotal = 0;
+                const homeTeam = String((match.match_name || '').split(/\s+vs\s+/i)[0] || '');
                 for (const bet of singles) {
                     const type = String(bet.bet_type || '').toLowerCase();
                     const choice = String(bet.choice || '');
@@ -765,21 +767,29 @@ app.post('/api/admin/matches/:id/score-preview', requireAdmin, (req, res) => {
                     const isGoal = type.includes('goal') || type.includes('gp') || type.includes('ဂိုးပေါင်း');
                     let key;
                     if (isGoal) key = /over|ပေါ်/i.test(choice) ? 'over' : 'under';
-                    else key = choice === String((match.match_name || '').split(/\s+vs\s+/i)[0] || '') ? 'home' : 'away';
+                    else key = choice === homeTeam ? 'home' : 'away';
                     markets[key] += amount;
                     stakeTotal += amount;
                     const outcome = calculateBetOutcome(bet.bet_type, bet.choice, bet.odds_rate, hs, as,
                         bet.match_name || match.match_name, amount, match.body_favored_side || 'home');
-                    projectedAdminPL += amount - Number(outcome.returnAmount || 0);
+                    const adminDelta = amount - Number(outcome.returnAmount || 0);
+                    projectedAdminPL += adminDelta;
                     const marker = bet.username || 'Unknown';
+                    const resultStatus = String(outcome.status || 'PENDING').toUpperCase();
+                    const resultAmount = resultStatus.includes('WIN') ? Number(outcome.netProfit || 0)
+                        : resultStatus.includes('LOSE') || resultStatus.includes('LOSS') ? -amount : 0;
+                    market_bets[key].push({
+                        marker, odds: String(bet.odds_rate || '-'), amount,
+                        result: resultStatus, result_amount: Math.floor(resultAmount)
+                    });
                     if (!markers[marker]) markers[marker] = { marker, home:0, away:0, over:0, under:0, projectedPL:0, stake:0 };
                     markers[marker][key] += amount;
-                    markers[marker].projectedPL += amount - Number(outcome.returnAmount || 0);
+                    markers[marker].projectedPL += adminDelta;
                     markers[marker].stake += amount;
                 }
                 res.json({success:true, preview_only:true, settlement_performed:false,
                     match:{id:match.id, match_id:match.custom_match_id, match_name:match.match_name},
-                    score:{home:hs, away:as}, markets, stake_total:stakeTotal,
+                    score:{home:hs, away:as}, markets, market_bets, stake_total:stakeTotal,
                     projected_admin_pl:Math.floor(projectedAdminPL), marker_breakdown:Object.values(markers),
                     pending_single_bets:singles.length, excluded_parlay_bets:pending.length-singles.length,
                     note:'Preview only. No tickets, balances, statuses or settlement records were changed.'});
